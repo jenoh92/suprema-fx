@@ -217,31 +217,36 @@ function drawChart(d,label){
 }
 
 // ===== CSV (엑셀 한글 완벽 대응) =====
-function downloadCSV(){
- const CRLF="\r\n";
- let lines=[["통화","최초 고시환율","연초 평균","전월 평균","최근 3개월 평균"].join(",")];
+function downloadCSV() {
+  const CRLF = "\r\n";
+  const SEP = "\t"; // ✅ 탭으로 분리 (엑셀에서 표로 잘 열림)
 
- $("#tbody tr").each(function(){
-  const cols=[];
-  $(this).find("td").each(function(){
-    cols.push('"'+$(this).text().replace(/"/g,'""')+'"');
+  let lines = [];
+  lines.push(["통화","최초 고시환율","연초 평균","전월 평균","최근 3개월 평균"].join(SEP));
+
+  $("#tbody tr").each(function(){
+    const cols = [];
+    $(this).find("td").each(function(){
+      cols.push($(this).text().replace(/\t/g," "));
+    });
+    lines.push(cols.join(SEP));
   });
-  lines.push(cols.join(","));
- });
 
- const text=lines.join(CRLF);
- const buf=new ArrayBuffer(2+text.length*2);
- const view=new DataView(buf);
- view.setUint8(0,0xFF); view.setUint8(1,0xFE);
- for(let i=0;i<text.length;i++)
-  view.setUint16(2+i*2,text.charCodeAt(i),true);
+  const text = lines.join(CRLF);
 
- const blob=new Blob([buf],{type:"text/csv;charset=utf-16le;"});
- const a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="환율조회.csv";
- a.click();
+  // ✅ UTF-16LE + BOM (한글 완벽)
+  const buf = new ArrayBuffer(2 + text.length * 2);
+  const view = new DataView(buf);
+  view.setUint8(0, 0xFF); view.setUint8(1, 0xFE);
+  for (let i=0;i<text.length;i++) view.setUint16(2+i*2, text.charCodeAt(i), true);
+
+  const blob = new Blob([buf], { type: "text/tab-separated-values;charset=utf-16le;" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "환율조회.tsv";   // ✅ 확장자 tsv
+  a.click();
 }
+
 
 $(function(){
  const t=new Date();
@@ -256,3 +261,4 @@ $(function(){
 
 </body>
 </html>
+
