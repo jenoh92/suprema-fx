@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>환율 조회 (한국은행 ECOS · 매매기준율 기준)</title>
 
 <!-- jQuery & Chart.js -->
@@ -9,181 +10,266 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* ===== 전체 레이아웃 ===== */
-body {
-  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
-  background: #f7f7f7;
-  margin: 0;
-  padding: 0;
-  color: #333;
+:root{
+  --burgundy:#A12A44;         /* 슈프리마 버건디 */
+  --burgundy-dark:#8B233A;
+  --bg:#f7f7f7;
+  --card:#ffffff;
+  --line:#ececec;
+  --th-bg:#F4E6EA;
+  --gray:#78787A;             /* Classy Gray */
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  font-family:'Pretendard','Noto Sans KR',sans-serif;
+  background:var(--bg);
+  margin:0;
+  color:#333;
 }
 
 /* ===== 상단 헤더 ===== */
-.header {
-  display: flex;
-  align-items: center;
-  padding: 22px 32px;
-  background: #ffffff;
-  border-bottom: 1px solid #eee;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+.header{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:18px 24px;
+  background:#fff;
+  border-bottom:1px solid #eee;
+  box-shadow:0 2px 6px rgba(0,0,0,0.06);
 }
 
-.header img {
-  height: 34px;
-  margin-right: 14px;
+.header img{
+  height:30px;
+  width:auto;
+  display:block;
 }
 
-.header-title {
-  font-size: 22px;
-  font-weight: 600;
-  color: #A12A44; /* Infinite Burgundy */
-  margin-left: 8px;
+.header-title{
+  font-size:20px;
+  font-weight:700;
+  color:var(--burgundy);
 }
 
-/* ===== 조회 카드 ===== */
-.card {
-  background: #fff;
-  border-radius: 14px;
-  padding: 22px 28px;
-  margin: 24px auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+/* ===== 전체 컨테이너 (스크롤 없이 한 화면) ===== */
+.page{
+  height: calc(100vh - 70px); /* 헤더 높이만큼 제외 (필요시 70 조정) */
+  padding:16px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
 }
 
-/* ===== 조회 영역 ===== */
-#dateInput {
-  padding: 6px 10px;
-  font-size: 15px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+/* 상단 조회 바 (작게) */
+.topbar{
+  background:var(--card);
+  border-radius:14px;
+  padding:12px 14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
 }
 
-button {
-  background: #A12A44; /* Infinite Burgundy */
-  color: #fff;
-  border: none;
-  padding: 8px 16px;
-  font-size: 15px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: 0.15s;
-  margin-left: 6px;
+.topbar-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
 }
 
-button:hover {
-  background: #8B233A; /* 더 짙은 버건디 */
+label{ font-size:14px; }
+
+#dateInput{
+  padding:7px 10px;
+  font-size:14px;
+  border:1px solid #ccc;
+  border-radius:8px;
 }
 
-/* ===== 테이블 ===== */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 16px;
-  background: #fff;
+button{
+  background:var(--burgundy);
+  color:#fff;
+  border:none;
+  padding:8px 14px;
+  font-size:14px;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.15s;
 }
 
-th {
-  background: #F4E6EA; /* 버건디 연톤 */
-  color: #A12A44;
-  font-weight: 600;
-  padding: 14px 0;
-  border-bottom: 2px solid #ddd;
-  text-align: center;
+button:hover{ background:var(--burgundy-dark); }
+
+.info{
+  font-size:12px;
+  color:#666;
+  white-space:nowrap;
 }
 
-td {
-  padding: 12px 6px;
-  border-bottom: 1px solid #eee;
-  text-align: center;
+.error{
+  color:#d00;
+  font-weight:700;
+  font-size:13px;
 }
 
-tbody tr:hover {
-  background: #fafafa;
+/* ===== 메인 2열 영역 ===== */
+.main{
+  flex:1; /* 남은 높이 전부 */
+  display:grid;
+  grid-template-columns: 1.35fr 1fr; /* 왼쪽 테이블 넓게 */
+  gap:12px;
+  min-height:0; /* overflow 계산 필수 */
 }
 
-/* ===== 안내문구 ===== */
-.info {
-  font-size: 13px;
-  color: #555;
-  margin-top: 10px;
+.card{
+  background:var(--card);
+  border-radius:14px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+  padding:14px;
+  min-height:0; /* 내부 스크롤 가능하게 */
 }
 
-.error {
-  color: #d00;
-  font-weight: bold;
-  margin-top: 12px;
+/* ===== 테이블 카드 ===== */
+.table-title{
+  font-size:15px;
+  font-weight:700;
+  margin:0 0 10px 0;
+  color:#222;
 }
 
-/* ===== 그래프 영역 ===== */
-#chartArea {
-  margin-top: 36px;
+.table-wrap{
+  height: calc(100% - 28px); /* 제목 높이 제외 */
+  overflow:auto;             /* 테이블만 스크롤 */
+  border:1px solid var(--line);
+  border-radius:12px;
 }
 
-#chartContainer {
-  max-width: 900px;
-  margin: 0 auto;
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:#fff;
 }
 
-#rateChart {
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+th, td{
+  padding:10px 8px;
+  border-bottom:1px solid #eee;
+  text-align:center; /* ✅ 요청: 가운데 정렬 */
+  font-size:14px;
 }
 
-select {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid #aaa;
-  font-size: 15px;
+th{
+  position:sticky;
+  top:0;
+  background:var(--th-bg);
+  color:var(--burgundy);
+  font-weight:700;
+  border-bottom:2px solid #ddd;
+  z-index:1;
+}
+
+tbody tr:hover{ background:#fafafa; }
+
+/* ===== 차트 카드 ===== */
+.chart-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.chart-head h3{
+  margin:0;
+  font-size:15px;
+  font-weight:700;
+}
+
+select{
+  padding:7px 10px;
+  border-radius:8px;
+  border:1px solid #aaa;
+  font-size:14px;
+}
+
+.chart-box{
+  height: calc(100% - 40px); /* 헤더 제외 */
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:10px;
+}
+
+/* canvas는 부모 높이를 따라가게 */
+#rateChart{
+  width:100% !important;
+  height:100% !important;
+}
+
+/* ===== 모바일: 세로로 ===== */
+@media (max-width: 980px){
+  .page{ height:auto; }
+  .main{
+    grid-template-columns: 1fr;
+  }
+  .chart-box{ height:340px; }
 }
 </style>
 </head>
 
 <body>
-
-<!-- ===== 상단 헤더 ===== -->
 <div class="header">
   <img src="Suprema_logo_basic.jpg" alt="Suprema Logo">
   <div class="header-title">환율 조회</div>
 </div>
 
-<!-- ===== 조회 영역 ===== -->
-<div class="card">
-  <label>조회일:
-    <input type="date" id="dateInput">
-  </label>
-  <button id="btnSearch">조회</button>
-  <button id="btnCsv">CSV 다운로드</button>
+<div class="page">
+  <!-- 상단 조회바 -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <label>조회일:</label>
+      <input type="date" id="dateInput">
+      <button id="btnSearch">조회</button>
+      <button id="btnCsv">CSV 다운로드</button>
+      <span id="msg" class=""></span>
+    </div>
+    <div id="subInfo" class="info"></div>
+  </div>
 
-  <div id="msg"></div>
-  <div id="subInfo" class="info"></div>
-</div>
+  <!-- 2열 메인 -->
+  <div class="main">
+    <!-- ✅ 왼쪽: 테이블 -->
+    <div class="card">
+      <div class="table-title">환율 테이블</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>통화</th>
+              <th>최초 고시환율 (원)</th>
+              <th>연초~조회일 평균 (원)</th>
+              <th>전월 평균 (원)</th>
+              <th>최근 3개월 평균 (원)</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
 
-<!-- ===== 결과 테이블 ===== -->
-<div class="card">
-<table>
-  <thead>
-    <tr>
-      <th>통화</th>
-      <th>최초 고시환율 (원)</th>
-      <th>연초~조회일 평균 (원)</th>
-      <th>전월 평균 (원)</th>
-      <th>최근 3개월 평균 (원)</th>
-    </tr>
-  </thead>
-  <tbody id="tbody"></tbody>
-</table>
-</div>
-
-<!-- ===== 그래프 ===== -->
-<div class="card" id="chartArea">
-  <h3>환율 변동 추이 (최근 3개월)</h3>
-  <label>통화:
-    <select id="chartCurrency"></select>
-  </label>
-
-  <div id="chartContainer">
-    <canvas id="rateChart" height="360"></canvas>
+    <!-- ✅ 오른쪽: 그래프 -->
+    <div class="card" id="chartArea">
+      <div class="chart-head">
+        <h3>환율 변동 추이 (최근 3개월)</h3>
+        <div>
+          <label style="font-size:14px; margin-right:6px;">통화:</label>
+          <select id="chartCurrency"></select>
+        </div>
+      </div>
+      <div class="chart-box">
+        <canvas id="rateChart"></canvas>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -222,13 +308,11 @@ function parseNumber(x) {
 function ymdFromDate(d) {
   return `${d.getFullYear()}${("0" + (d.getMonth() + 1)).slice(-2)}${("0" + d.getDate()).slice(-2)}`;
 }
-
 function dateFromYmd(ymd) {
   return new Date(ymd.slice(0, 4), ymd.slice(4, 6) - 1, ymd.slice(6, 8));
 }
-
 function getYearStartYmd(ymd) {
-  return ymd.slice(0, 4) + "0102"; // ECOS 데이터 기준
+  return ymd.slice(0, 4) + "0102";
 }
 
 // 날짜 범위 평균 계산
@@ -242,7 +326,6 @@ function calcAverage(rows, key, start, end) {
     if (v == null) return;
     if (!(t in map)) map[t] = v;
   });
-
   const vals = Object.values(map);
   if (!vals.length) return null;
   return vals.reduce((a, b) => a + b, 0) / vals.length;
@@ -259,7 +342,17 @@ function getRateOnDate(rows, key, ymd) {
   return v;
 }
 
-// ===== 그래프 그리기 =====
+function getLastDataDate(rows) {
+  let maxTime = null;
+  rows.forEach(row => {
+    const t = String(row.TIME || "");
+    if (!t) return;
+    if (!maxTime || t > maxTime) maxTime = t;
+  });
+  return maxTime;
+}
+
+// ===== 그래프 =====
 function updateChart(rows, queryYmd, label) {
   const cfg = CURRENCIES.find(c => c.label === label);
   if (!cfg) return;
@@ -288,26 +381,32 @@ function updateChart(rows, queryYmd, label) {
     type: "line",
     data: {
       labels,
-      datasets: [
-        {
-          label,
-          data: values,
-          borderColor: "#78787A", /* Classy Gray */
-          borderWidth: 2,
-          pointRadius: 0,
-          fill: false
-        }
-      ]
+      datasets: [{
+        label,
+        data: values,
+        borderColor: "#78787A",
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0.15
+      }]
     },
     options: {
-      plugins: { legend: { display: false } }
+      responsive: true,
+      maintainAspectRatio: false, // ✅ 카드 높이에 맞춤
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { autoSkip: true, maxRotation: 0, minRotation: 0 }
+        }
+      }
     }
   });
 }
 
-// ===== 조회 실행 =====
+// ===== 조회 =====
 function search() {
-  $("#msg").text("조회중...");
+  $("#msg").removeClass("error").text("조회중...");
   $("#tbody").empty();
 
   const d = $("#dateInput").val();
@@ -319,12 +418,9 @@ function search() {
 
   const prevFirst = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth() - 1, 1));
   const prevLast = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0));
-
   const threeStart = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth() - 3, 1));
 
-  /* 🔥 중요! 문자열 날짜 비교로 minStart 설정 */
   const minStart = (yearStart < threeStart ? yearStart : threeStart);
-
   const url = `${BACKEND}?start=${minStart}&end=${ymd}&callback=?`;
 
   $.ajax({
@@ -336,13 +432,26 @@ function search() {
       const rows = data?.StatisticSearch?.row || [];
       window._lastRows = rows;
 
-      $("#tbody").empty();
+      if (!rows.length) {
+        $("#msg").addClass("error").text("데이터가 없습니다. (공휴일/주말 등)");
+        return;
+      }
 
+      // 업데이트 안내
+      const lastTime = getLastDataDate(rows);
+      let infoText = `조회 기준일: ${d}`;
+      if (lastTime && lastTime < ymd) {
+        const lastDate = lastTime.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3");
+        infoText += ` · ECOS 데이터: ${lastDate}까지`;
+      }
+      $("#subInfo").text(infoText);
+
+      $("#tbody").empty();
       CURRENCIES.forEach(c => {
-        const fr = getRateOnDate(rows, c.key, ymd);
+        const fr   = getRateOnDate(rows, c.key, ymd);
         const yavg = calcAverage(rows, c.key, yearStart, ymd);
         const pavg = calcAverage(rows, c.key, prevFirst, prevLast);
-        const m3avg = calcAverage(rows, c.key, threeStart, prevLast);
+        const m3avg= calcAverage(rows, c.key, threeStart, prevLast);
 
         $("#tbody").append(`
           <tr>
@@ -356,20 +465,20 @@ function search() {
       });
 
       updateChart(rows, ymd, $("#chartCurrency").val());
+    },
+    error: function(){
+      $("#msg").addClass("error").text("조회 실패 (네트워크/백엔드 확인)");
     }
   });
 }
 
-// ===== CSV 다운로드 =====
+// ===== CSV =====
 function downloadCSV() {
   let lines = ["통화,최초 고시환율,연초~조회일 평균,전월 평균,최근 3개월 평균"];
-
   $("#tbody tr").each(function () {
     const tds = $(this).find("td");
     const arr = [];
-    tds.each(function () {
-      arr.push($(this).text().replace(/,/g, ""));
-    });
+    tds.each(function () { arr.push($(this).text().replace(/,/g, "")); });
     lines.push(arr.join(","));
   });
 
@@ -381,21 +490,20 @@ function downloadCSV() {
   a.download = "환율조회.csv";
   document.body.appendChild(a);
   a.click();
-
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-// ===== 초기 실행 =====
+// ===== 초기 =====
 $(function () {
   const t = new Date();
   $("#dateInput").val(
     `${t.getFullYear()}-${("0" + (t.getMonth() + 1)).slice(-2)}-${("0" + t.getDate()).slice(-2)}`
   );
 
-  CURRENCIES.forEach(c =>
-    $("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`)
-  );
+  CURRENCIES.forEach(c => {
+    $("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`);
+  });
 
   $("#btnSearch").on("click", search);
   $("#btnCsv").on("click", downloadCSV);
@@ -405,11 +513,12 @@ $(function () {
     const d = $("#dateInput").val().replace(/-/g, "");
     updateChart(window._lastRows, d, $(this).val());
   });
-   search();
+
+  search(); // ✅ 처음 켰을 때 바로 표시
 });
 </script>
-
 </body>
 </html>
+
 
 
