@@ -35,7 +35,6 @@ button{ background:var(--burgundy); color:#fff; border:none; padding:10px 24px; 
 .table-wrap{ border-radius:12px; border:1px solid var(--border); overflow: hidden; }
 table{ width:100%; border-collapse:collapse; font-size: 15px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:15px 10px; border-bottom:2px solid var(--border); font-size: 16px; text-align: center; }
-/* ✅ 모든 셀을 가운데 정렬로 고정 */
 td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center; }
 
 .rate-diff { font-size: 12px; margin-left: 5px; font-weight: 700; }
@@ -60,7 +59,7 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
   <div class="header">
     <img src="Suprema_logo_basic.jpg" alt="Logo">
     <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
-    <div style="margin-left: auto; font-size: 13px; color: #888; font-weight: 500;">출처: 한국은행 (ECOS)</div>
+    <div style="margin-left: auto; font-size: 13px; color: #888; font-weight: 500;">출처: 한국은행 경제통계시스템 (ECOS)</div>
   </div>
 
   <div class="container">
@@ -142,12 +141,22 @@ const fNum = (x) => x == null ? "-" : Number(x).toLocaleString("ko-KR",{minimumF
 const pNum = (x) => isNaN(parseFloat(String(x).replace(/,/g,""))) ? null : parseFloat(String(x).replace(/,/g,""));
 const toYmd = (d) => d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d.getDate()).slice(-2);
 
+// ✅ 캐시 기능: 메모리 및 세션저장소 활용
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
   const yearStart = ymd.slice(0,4) + "0101"; 
-  $(".loading-overlay").show();
+  const cacheKey = `rate_data_${yearStart}_${ymd}`;
   
+  // 1. 캐시 확인
+  const cachedData = sessionStorage.getItem(cacheKey);
+  if(cachedData) {
+    globalRows = JSON.parse(cachedData);
+    processResult(ymd, d);
+    return;
+  }
+
+  $(".loading-overlay").show();
   $.ajax({
     url: `${BACKEND}?start=${yearStart}&end=${ymd}&callback=?`,
     dataType: "jsonp",
@@ -155,12 +164,19 @@ function search(){
       $(".loading-overlay").hide();
       globalRows = data?.row || data?.StatisticSearch?.row || [];
       if(!globalRows.length) return;
-      renderMainTable(ymd);
-      updateChart(globalRows, ymd, $("#chartCurrency").val());
-      calculateSuprema();
-      $("#subInfo").text("조회 기준일: " + d);
+      
+      // 2. 데이터 저장 (캐싱)
+      sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
+      processResult(ymd, d);
     }
   });
+}
+
+function processResult(ymd, d) {
+  renderMainTable(ymd);
+  updateChart(globalRows, ymd, $("#chartCurrency").val());
+  calculateSuprema();
+  $("#subInfo").text("조회 기준일: " + d);
 }
 
 function renderMainTable(ymd){
@@ -180,7 +196,6 @@ function renderMainTable(ymd){
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     
-    // ✅ 첫 번째 td 스타일에서 text-align: left 제거 (가운데 정렬 적용)
     $("#tbody").append(`<tr><td style="font-weight:700;">${c.label}</td><td><strong style="font-size:17px;">${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
   });
 }
@@ -210,6 +225,7 @@ function updateChart(rows, ymd, label){
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
+      animation: { duration: 400 }, // ✅ 차트 애니메이션 가속
       scales: {
         x: { 
           grid: { display: false },
