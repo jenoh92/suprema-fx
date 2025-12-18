@@ -1,13 +1,11 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>슈프리마 환율 통합 관리 시스템 (스크롤 최적화)</title>
-
+<title>슈프리마 환율 통합 관리 시스템</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 :root{
@@ -18,43 +16,45 @@
   --card:#ffffff;
   --border:#e0e0e0;
   --text-gray:#666;
-  --shadow:0 4px 12px rgba(0,0,0,0.08);
 }
 *{ box-sizing:border-box; }
-body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-x: hidden; }
+body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow: hidden; }
 
-/* 헤더 높이 축소 */
+/* 레이아웃 최적화 */
 .header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); }
-.header img{ height:28px; }
+.header img{ height:26px; }
 .header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
 
-.container{ width:100%; padding:10px; }
-.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:var(--shadow); margin-bottom:10px; border:1px solid var(--border); }
+.container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); }
+.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:10px; border:1px solid var(--border); }
 
-/* 컨트롤 */
-.topbar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
-.controls{ display:flex; align-items:center; gap:8px; }
-input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; }
-button{ background:var(--burgundy); color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
+.top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
+button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
 
-/* 메인 그리드 높이 조정 */
-.grid{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; }
-@media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; }
 
-/* 테이블 및 차트 높이 고정 (스크롤 방지) */
-.table-wrap{ overflow:auto; border-radius:10px; border:1px solid var(--border); max-height: 350px; }
+/* 테이블 스타일 */
+.table-wrap{ height: 100%; overflow: auto; border-radius:10px; border:1px solid var(--border); }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
-th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; }
-td{ padding:8px; border-bottom:1px solid var(--border); text-align:center; }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; z-index: 1; }
+td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
 
-.chart-box{ position:relative; height:325px; border:1px solid var(--border); border-radius:10px; padding:8px; background:#fff; }
+/* 증감 스타일 복구 */
+.rate-diff { font-size: 11px; margin-left: 4px; font-weight: 600; }
+.up { color: #d60000; }
+.down { color: #0056b3; }
 
-/* 🚩 하단 슈프리마 섹션 최적화 (높이 축소) */
-.suprema-label { font-size: 16px; font-weight: 900; color: var(--burgundy); margin-bottom: 10px; }
-.suprema-box { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 15px; align-items: center; }
-.result-highlight { background: #fdfdfd; border-radius: 10px; padding: 12px 20px; border: 1px solid var(--burgundy-light); }
-.res-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
-.res-val { font-weight: 800; font-size: 22px; color: var(--burgundy); }
+/* 차트 박스 */
+.chart-box{ position:relative; height: 100%; width: 100%; }
+
+/* 하단 슈프리마 섹션 (슬림 버전) */
+.suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
+.suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
+.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
+.res-item { text-align: center; }
+.res-label { font-size: 13px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
+.res-val { font-size: 22px; font-weight: 800; color: var(--burgundy); }
 
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; }
 </style>
@@ -67,25 +67,21 @@ td{ padding:8px; border-bottom:1px solid var(--border); text-align:center; }
   </div>
 
   <div class="container">
-    <div class="card">
-      <div class="topbar">
-        <div class="controls">
-          <input type="date" id="dateInput">
-          <button id="btnSearch">데이터 조회</button>
-        </div>
-        <div id="subInfo" style="font-size:12px; color:var(--text-gray);"></div>
-      </div>
+    <div class="top-nav">
+      <input type="date" id="dateInput">
+      <button id="btnSearch">데이터 조회</button>
+      <span id="subInfo" style="font-size:12px; color:var(--text-gray); margin-left: auto;"></span>
     </div>
 
-    <div class="grid">
-      <div class="card" style="position:relative;">
+    <div class="main-content">
+      <div class="card" style="position:relative; display:flex; flex-direction:column;">
         <div id="tableLoading" class="loading-overlay">로딩중...</div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
                 <th>통화</th>
-                <th>조회일 환율</th>
+                <th>조회일 환율 (원)</th>
                 <th>연초 평균</th>
                 <th>전월 평균</th>
                 <th>3개월 평균</th>
@@ -96,9 +92,9 @@ td{ padding:8px; border-bottom:1px solid var(--border); text-align:center; }
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" style="display:flex; flex-direction:column;">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-          <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이</div>
+          <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
           <select id="chartCurrency" style="font-size:12px;"></select>
         </div>
         <div class="chart-box"><canvas id="rateChart"></canvas></div>
@@ -106,21 +102,21 @@ td{ padding:8px; border-bottom:1px solid var(--border); text-align:center; }
     </div>
 
     <div class="card" style="margin-bottom: 0;">
-      <div class="suprema-label">※ 슈프리마 적용환율 상세 (USD)</div>
-      <div class="suprema-box">
-        <div class="filter-side" style="display:flex; gap:10px; align-items:center; background:#f9f9f9; padding:10px; border-radius:8px;">
+      <div style="font-size: 15px; font-weight: 900; color: var(--burgundy); margin-bottom: 8px;">※ 슈프리마 적용환율 상세 (USD)</div>
+      <div class="suprema-footer">
+        <div class="suprema-calc-box">
           <select id="selYear"></select>
           <select id="selMonth"></select>
-          <button id="btnCalc" style="flex-grow:1;">계산하기</button>
+          <button id="btnCalc">계산</button>
         </div>
-        
-        <div class="result-highlight" id="supremaDisplay">
+        <div class="res-card">
           <div class="res-item">
-            <span style="font-weight:800; font-size:15px;">최종 원가 (MAX)</span>
+            <span class="res-label">최종 원가 (MAX)</span>
             <span id="resWonka" class="res-val">-</span>
           </div>
-          <div class="res-item" style="border-top:1px solid #eee; padding-top:5px; margin-top:5px;">
-            <span style="font-weight:800; font-size:15px;">최종 판가 (-50원)</span>
+          <div style="width: 1px; background: #eee;"></div>
+          <div class="res-item">
+            <span class="res-label">최종 판가 (-50원)</span>
             <span id="resPanka" class="res-val" style="color:#333;">-</span>
           </div>
         </div>
@@ -129,7 +125,6 @@ td{ padding:8px; border-bottom:1px solid var(--border); text-align:center; }
   </div>
 
 <script>
-// (데이터 처리 로직은 이전과 동일하며, 출력 부분만 최적화되었습니다)
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -172,10 +167,58 @@ function renderMainTable(ymd){
     const cRows = globalRows.filter(r=>r.ITEM_NAME1.includes(c.key)).sort((a,b)=>a.TIME.localeCompare(b.TIME));
     const idx = cRows.findIndex(r=>r.TIME === ymd);
     const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
+    const prev = idx > 0 ? pNum(cRows[idx-1].DATA_VALUE) : null;
+    
+    let diffHtml = "";
+    if(curr && prev){
+      const diff = curr - prev;
+      diffHtml = diff > 0 ? `<span class="rate-diff up">▲${fNum(diff)}</span>` : diff < 0 ? `<span class="rate-diff down">▼${fNum(Math.abs(diff))}</span>` : "";
+    }
+
     const yavg = calcAvg(cRows, ymd.slice(0,4)+"0101", ymd);
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-    $("#tbody").append(`<tr><td>${c.label}</td><td><strong>${fNum(curr)}</strong></td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
+    
+    $("#tbody").append(`<tr><td>${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
+  });
+}
+
+function updateChart(rows, ymd, label){
+  const key = CURRENCIES.find(c=>c.label===label)?.key;
+  const threeStart = toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1));
+  const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
+  
+  const ctx = document.getElementById("rateChart").getContext("2d");
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.3)');
+  gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
+
+  const dates = cRows.map(r=>r.TIME);
+  const values = cRows.map(r=>pNum(r.DATA_VALUE));
+  
+  // 월말 날짜만 추출 (X축 표시용)
+  const monthEnds = {};
+  dates.forEach((d, i) => monthEnds[d.slice(0,6)] = i);
+  const showIndices = new Set(Object.values(monthEnds));
+
+  if (window._chartObj) window._chartObj.destroy();
+  window._chartObj = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: dates,
+      datasets: [{ data: values, borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { 
+            grid: { display: false },
+            ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } 
+        },
+        y: { grid: { color: '#f0f0f0' } }
+      }
+    }
   });
 }
 
@@ -185,32 +228,16 @@ function calculateSuprema(){
   const cRows = globalRows.filter(r=>r.ITEM_NAME1.includes("미국달러"));
   const pavg = calcAvg(cRows, toYmd(new Date(year, month-2, 1)), toYmd(new Date(year, month-1, 0)));
   const m3avg = calcAvg(cRows, toYmd(new Date(year, month-4, 1)), toYmd(new Date(year, month-1, 0)));
-
   if(pavg && m3avg) {
       const wonka = Math.max(pavg, m3avg);
-      $("#resWonka").text(fNum(wonka) + " 원");
-      $("#resPanka").text(fNum(wonka - 50) + " 원");
+      $("#resWonka").text(fNum(wonka));
+      $("#resPanka").text(fNum(wonka - 50));
   }
 }
 
 function calcAvg(cRows, s, e){
   const v = cRows.filter(r=>r.TIME >= s && r.TIME <= e).map(r=>pNum(r.DATA_VALUE)).filter(n=>n!=null);
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
-}
-
-function updateChart(rows, ymd, label){
-  const key = CURRENCIES.find(c=>c.label===label)?.key;
-  const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key)).slice(-90);
-  const ctx = document.getElementById("rateChart").getContext("2d");
-  if (window._chartObj) window._chartObj.destroy();
-  window._chartObj = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: cRows.map(r=>r.TIME.slice(4)),
-      datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", pointRadius: 0, fill: true, backgroundColor: "rgba(161, 42, 68, 0.05)", tension: 0.2 }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
 }
 
 $(function(){
@@ -221,8 +248,10 @@ $(function(){
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
   $("#btnSearch").on("click", search);
   $("#btnCalc").on("click", calculateSuprema);
+  $("#chartCurrency").on("change", () => updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val()));
   search();
 });
 </script>
 </body>
 </html>
+
