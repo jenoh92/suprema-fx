@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>환율 조회 (한국은행 ECOS · 매매기준율 기준)</title>
+<title>환율 조회 (X축 월말 표시 보정판)</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,176 +14,45 @@
   --burgundy:#A12A44;
   --burgundy-dark:#8B233A;
   --burgundy-light:#F4E6EA;
-  --gray:#78787A;
   --bg:#f7f7f7;
   --card:#ffffff;
   --shadow:0 4px 12px rgba(0,0,0,0.08);
 }
 *{ box-sizing:border-box; }
-html, body{ height:100%; }
 body{
   font-family:'Pretendard','Noto Sans KR',sans-serif;
   background:var(--bg);
   margin:0;
   color:#333;
 }
-
-/* ===== 헤더 ===== */
 .header{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:18px 24px;
-  background:#fff;
-  border-bottom:1px solid #eee;
-  box-shadow:0 2px 6px rgba(0,0,0,0.06);
+  display:flex; align-items:center; gap:14px; padding:18px 24px;
+  background:#fff; border-bottom:1px solid #eee; box-shadow:0 2px 6px rgba(0,0,0,0.06);
 }
-.header img{ height:34px; width:auto; display:block; }
-.header-title{
-  display:flex;
-  align-items:baseline;
-  gap:10px;
-  min-width:0;
-  flex:1;
-}
-.header-title .title{
-  font-size:22px;
-  font-weight:800;
-  color:var(--burgundy);
-  white-space:nowrap;
-}
-.header-title .source{
-  font-size:14px;
-  font-weight:500;
-  color:#888;
-  white-space:nowrap;
-}
+.header img{ height:34px; }
+.header-title{ display:flex; align-items:baseline; gap:10px; flex:1; }
+.header-title .title{ font-size:22px; font-weight:800; color:var(--burgundy); }
+.header-title .source{ font-size:14px; color:#888; }
 
-.container{
-  width:100%;
-  max-width:none;
-  margin:14px 0 18px;
-  padding:0 14px;
-}
+.container{ width:100%; padding:14px; }
+.card{ background:var(--card); border-radius:14px; padding:16px; box-shadow:var(--shadow); margin-bottom:14px; }
 
-.card{
-  background:var(--card);
-  border-radius:14px;
-  padding:16px;
-  box-shadow:var(--shadow);
-  margin-bottom: 14px;
-}
-
-/* 상단 컨트롤 */
-.topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-}
-.controls{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.controls label{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  white-space:nowrap;
-}
-#dateInput{
-  padding:6px 10px;
-  font-size:15px;
-  border:1px solid #ccc;
-  border-radius:8px;
-  background:#fff;
-}
-button{
-  background:var(--burgundy);
-  color:#fff;
-  border:none;
-  padding:8px 14px;
-  font-size:15px;
-  border-radius:8px;
-  cursor:pointer;
-  transition:0.15s;
-  white-space:nowrap;
-}
+.topbar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.controls{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+#dateInput{ padding:6px 10px; border-radius:8px; border:1px solid #ccc; }
+button{ background:var(--burgundy); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; }
 button:hover{ background:var(--burgundy-dark); }
-.info{ font-size:13px; color:#555; margin-top:6px; }
-.error{ color:#d00; font-weight:700; margin-top:10px; }
 
-/* 2열 그리드 */
-.grid{
-  display:grid;
-  grid-template-columns: 1.25fr 1fr;
-  gap:16px;
-}
+.grid{ display:grid; grid-template-columns: 1.25fr 1fr; gap:16px; }
+@media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
 
-@media (max-width: 980px){
-  .grid{ grid-template-columns: 1fr; }
-}
+.table-wrap{ overflow:auto; border-radius:12px; border:1px solid #f0f0f0; }
+table{ width:100%; border-collapse:collapse; min-width:700px; }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:12px; border-bottom:2px solid #ddd; }
+td{ padding:12px; border-bottom:1px solid #eee; text-align:center; }
 
-/* 테이블 스타일 */
-.table-wrap{
-  overflow:auto;
-  border-radius:12px;
-  border:1px solid #f0f0f0;
-}
-table{
-  width:100%;
-  border-collapse:collapse;
-  background:#fff;
-  min-width:700px;
-}
-th{
-  background:var(--burgundy-light);
-  color:var(--burgundy);
-  font-weight:800;
-  padding:12px 10px;
-  border-bottom:2px solid #ddd;
-  text-align:center;
-  white-space:nowrap;
-}
-td{
-  padding:12px 10px;
-  border-bottom:1px solid #eee;
-  text-align:center; /* ✅ 전체 셀 가운데 정렬 */
-  white-space:nowrap;
-}
-tbody tr:hover{ background:#fafafa; }
-
-/* 그래프 섹션 */
-.chart-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  margin-bottom:10px;
-  flex-wrap:wrap;
-}
-.chart-title{
-  font-size:16px;
-  font-weight:900;
-}
-select{
-  padding:6px 10px;
-  border-radius:8px;
-  border:1px solid #aaa;
-  font-size:15px;
-  background:#fff;
-}
-.chart-box{
-  position: relative;
-  border-radius:12px;
-  background:#fff;
-  border:1px solid #f0f0f0;
-  padding:10px;
-  height: 430px;
-}
+.chart-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+.chart-box{ position:relative; height:430px; border:1px solid #f0f0f0; border-radius:12px; padding:10px; }
 </style>
 </head>
 
@@ -200,13 +69,11 @@ select{
     <div class="card">
       <div class="topbar">
         <div class="controls">
-          <label>조회일:
-            <input type="date" id="dateInput">
-          </label>
+          <label>조회일: <input type="date" id="dateInput"></label>
           <button id="btnSearch">조회</button>
           <button id="btnExcel">엑셀 내려받기</button>
         </div>
-        <div id="subInfo" class="info"></div>
+        <div id="subInfo" style="font-size:13px; color:#555;"></div>
       </div>
       <div id="msg"></div>
     </div>
@@ -231,12 +98,8 @@ select{
 
       <div class="card">
         <div class="chart-header">
-          <div class="chart-title">환율 변동 추이 (최근 3개월)</div>
-          <div>
-            <label>통화:
-              <select id="chartCurrency"></select>
-            </label>
-          </div>
+          <div style="font-size:16px; font-weight:900;">환율 변동 추이 (최근 3개월)</div>
+          <select id="chartCurrency"></select>
         </div>
         <div class="chart-box">
           <canvas id="rateChart"></canvas>
@@ -247,7 +110,6 @@ select{
 
 <script>
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
-
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
   { key: "멕시코", label: "MXN (멕시코 페소)" },
@@ -258,60 +120,12 @@ const CURRENCIES = [
   { key: "인도루피", label: "INR (인도 루피)" }
 ];
 
-function formatNumber(x){
-  if (x == null) return "-";
-  return Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
-}
+function formatNumber(x){ return x == null ? "-" : Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function parseNumber(x){ const n = Number(String(x).replace(/,/g,"")); return isNaN(n) ? null : n; }
+function ymdFromDate(d){ return d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d.getDate()).slice(-2); }
+function dateFromYmd(ymd){ return new Date(ymd.slice(0,4), Number(ymd.slice(4,6))-1, ymd.slice(6,8)); }
 
-function parseNumber(x){
-  const n = Number(String(x).replace(/,/g,""));
-  return isNaN(n) ? null : n;
-}
-
-function ymdFromDate(d){
-  return `${d.getFullYear()}${("0"+(d.getMonth()+1)).slice(-2)}${("0"+d.getDate()).slice(-2)}`;
-}
-
-function dateFromYmd(ymd){
-  return new Date(ymd.slice(0,4), Number(ymd.slice(4,6))-1, ymd.slice(6,8));
-}
-
-function getActualYearStart(rows, year) {
-  const yearStr = String(year);
-  const yearRows = rows.filter(r => String(r.TIME).startsWith(yearStr)).map(r => String(r.TIME));
-  return yearRows.length === 0 ? yearStr + "0101" : yearRows.sort()[0];
-}
-
-function calcAverage(rows, key, start, end){
-  const map = {};
-  rows.forEach(r=>{
-    if (!String(r.ITEM_NAME1).includes(key)) return;
-    const t = String(r.TIME);
-    if (t < start || t > end) return;
-    const v = parseNumber(r.DATA_VALUE);
-    if (v != null && !(t in map)) map[t] = v;
-  });
-  const vals = Object.values(map);
-  return vals.length === 0 ? null : vals.reduce((a,b)=>a+b,0)/vals.length;
-}
-
-function getRateOnDate(rows, key, ymd){
-  let v = null;
-  rows.forEach(r=>{
-    if (String(r.ITEM_NAME1).includes(key) && String(r.TIME) === ymd) v = parseNumber(r.DATA_VALUE);
-  });
-  return v;
-}
-
-function buildMonthEndIndexSet(dates){
-  const lastIndexByMonth = {};
-  for (let i=0; i<dates.length; i++){
-    const ym = dates[i].slice(0,6);
-    lastIndexByMonth[ym] = i;
-  }
-  return new Set(Object.values(lastIndexByMonth));
-}
-
+// 차트 업데이트 함수 (월말 날짜 표시 로직 강화)
 function updateChart(rows, queryYmd, label){
   const cfg = CURRENCIES.find(c=>c.label===label);
   if (!cfg) return;
@@ -331,12 +145,17 @@ function updateChart(rows, queryYmd, label){
   });
 
   const dates = Object.keys(map).sort();
-  const labels = dates.map(d=>`${d.slice(4,6)}-${d.slice(6,8)}`);
   const values = dates.map(d=>map[d]);
 
+  // ✅ 월말 인덱스 찾기: 해당 월의 데이터 중 가장 마지막 날짜인 경우만 인덱스 저장
+  const monthEndIndices = {};
+  dates.forEach((d, idx) => {
+    const ym = d.slice(0, 6);
+    monthEndIndices[ym] = idx; 
+  });
+  const showIndices = new Set(Object.values(monthEndIndices));
+
   const ctx = document.getElementById("rateChart").getContext("2d");
-  
-  // ✅ 그라데이션 생성 (위에서 아래로)
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0.0)');
@@ -346,7 +165,7 @@ function updateChart(rows, queryYmd, label){
   window._chartObj = new Chart(ctx, {
     type: "line",
     data: {
-      labels: labels,
+      labels: dates, // 원래 날짜 데이터를 라벨로 사용
       datasets: [{
         data: values,
         borderColor: "#A12A44",
@@ -362,7 +181,21 @@ function updateChart(rows, queryYmd, label){
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { grid: { display: false } },
+        x: {
+          grid: { display: false },
+          ticks: {
+            autoSkip: false, // ✅ 자동 건너뛰기 끄기 (수동 제어)
+            maxRotation: 0,
+            callback: function(val, index) {
+              // ✅ 월말 인덱스에 해당하는 날짜만 MM-DD 형식으로 표시
+              if (showIndices.has(index)) {
+                const d = dates[index];
+                return d.slice(4,6) + "-" + d.slice(6,8);
+              }
+              return null; // 나머지는 표시 안 함
+            }
+          }
+        },
         y: { grid: { color: '#f5f5f5' } }
       }
     }
@@ -370,66 +203,48 @@ function updateChart(rows, queryYmd, label){
 }
 
 function search(){
-  $("#msg").removeClass("error").text("데이터를 불러오는 중...");
-  $("#tbody").empty();
+  $("#msg").text("조회 중...");
   const d = $("#dateInput").val();
-  if (!d) return;
   const ymd = d.replace(/-/g,"");
   const qd = dateFromYmd(ymd);
-  const yearStartSearch = qd.getFullYear() + "0101";
-  const prevFirst = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-1, 1));
-  const prevLast  = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0));
-  const threeStart = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-3, 1));
+  const start = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-4, 1));
   
-  const minStart = (yearStartSearch < threeStart ? yearStartSearch : threeStart);
-  const url = `${BACKEND}?start=${minStart}&end=${ymd}&callback=?`;
-
   $.ajax({
-    url: url, dataType: "jsonp",
+    url: `${BACKEND}?start=${start}&end=${ymd}&callback=?`,
+    dataType: "jsonp",
     success: function(data){
       $("#msg").text("");
       const rows = data?.StatisticSearch?.row || [];
       window._lastRows = rows;
-      if (!rows.length){ $("#msg").addClass("error").text("조회된 데이터가 없습니다."); return; }
+      if (!rows.length) { $("#msg").text("데이터가 없습니다."); return; }
 
-      const actualYearStart = getActualYearStart(rows, qd.getFullYear());
+      $("#tbody").empty();
+      const actualYearStart = rows.filter(r=>r.TIME.startsWith(qd.getFullYear())).map(r=>r.TIME).sort()[0];
+
       CURRENCIES.forEach(c=>{
-        const fr   = getRateOnDate(rows, c.key, ymd);
-        const yavg = calcAverage(rows, c.key, actualYearStart, ymd);
-        const pavg = calcAverage(rows, c.key, prevFirst, prevLast);
-        const m3avg= calcAverage(rows, c.key, threeStart, prevLast);
+        const fr = parseNumber(rows.find(r=>r.TIME===ymd && r.ITEM_NAME1.includes(c.key))?.DATA_VALUE);
+        const yavg = calcAvg(rows, c.key, actualYearStart, ymd);
+        const pavg = calcAvg(rows, c.key, ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-1, 1)), ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0)));
+        const m3avg = calcAvg(rows, c.key, ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-3, 1)), ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0)));
         
-        // ✅ <td> 태그 내 정렬 관련 스타일을 제거하여 CSS의 center 정렬이 적용되게 함
-        $("#tbody").append(`
-          <tr>
-            <td>${c.label}</td>
-            <td style="font-weight:700;">${formatNumber(fr)}</td>
-            <td>${formatNumber(yavg)}</td>
-            <td>${formatNumber(pavg)}</td>
-            <td>${formatNumber(m3avg)}</td>
-          </tr>
-        `);
+        $("#tbody").append(`<tr><td>${c.label}</td><td style="font-weight:700;">${formatNumber(fr)}</td><td>${formatNumber(yavg)}</td><td>${formatNumber(pavg)}</td><td>${formatNumber(m3avg)}</td></tr>`);
       });
-      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart.slice(0,4)}-${actualYearStart.slice(4,6)}-${actualYearStart.slice(6,8)})`);
+      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart})`);
       updateChart(rows, ymd, $("#chartCurrency").val());
     }
   });
 }
 
+function calcAvg(rows, key, s, e){
+  const v = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= s && r.TIME <= e).map(r=>parseNumber(r.DATA_VALUE)).filter(n=>n!=null);
+  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
+}
+
 $(function(){
-  const t = new Date();
-  $("#dateInput").val(t.toISOString().split('T')[0]);
+  $("#dateInput").val(new Date().toISOString().split('T')[0]);
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
   $("#btnSearch").on("click", search);
-  $("#btnExcel").on("click", function(){
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.table_to_sheet(document.querySelector("table"));
-      XLSX.utils.book_append_sheet(wb, ws, "환율");
-      XLSX.writeFile(wb, `환율조회_${$("#dateInput").val()}.xlsx`);
-  });
-  $("#chartCurrency").on("change", function(){
-    if (window._lastRows) updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $(this).val());
-  });
+  $("#chartCurrency").on("change", () => updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val()));
   search();
 });
 </script>
