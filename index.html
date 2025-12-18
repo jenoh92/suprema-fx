@@ -19,7 +19,7 @@
   --text-gray:#666;
 }
 *{ box-sizing:border-box; }
-body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; } /* 세로 스크롤 허용 */
+body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; }
 
 .header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:26px; }
@@ -30,11 +30,9 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
 
-/* ✅ 메인 영역: 고정 높이 대신 내용에 맞게 조절 (height 제거) */
 .main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:15px; align-items: start; }
 .card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); }
 
-/* ✅ 테이블 구역 높이 최적화: 여백(붉은 구역) 제거 */
 .table-wrap{ border-radius:10px; border:1px solid var(--border); overflow: hidden; }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); }
@@ -44,11 +42,10 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* ✅ 그래프 높이를 테이블 높이와 비슷하게 고정 (내용물에 맞춤) */
+/* 그래프 높이 고정 (테이블과 균형) */
 .chart-card { display: flex; flex-direction: column; height: 100%; min-height: 380px; }
 .chart-container { flex: 1; position: relative; min-height: 300px; padding-top: 10px; }
 
-/* 하단 섹션 */
 .suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 12px; border-radius: 8px; }
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
@@ -197,17 +194,38 @@ function updateChart(rows, ymd, label){
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
+  // ✅ 날짜 필터링 로직: 말일(또는 데이터상 해당 월의 마지막 날)만 표시
+  const dates = cRows.map(r=>r.TIME);
+  const monthEnds = {};
+  dates.forEach((d, i) => {
+    const yyyymm = d.slice(0,6);
+    monthEnds[yyyymm] = i; // 마지막 인덱스가 해당 월의 말일 데이터가 됨
+  });
+  const showIndices = new Set(Object.values(monthEnds));
+
   if (window._chartObj) window._chartObj.destroy();
   window._chartObj = new Chart(ctx, {
     type: "line",
     data: {
-      labels: cRows.map(r=>r.TIME.slice(4,8)),
+      labels: dates,
       datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
+      scales: {
+        x: { 
+          grid: { display: false },
+          ticks: { 
+            autoSkip: false,
+            // ✅ 요청 사항 반영: 말일자 인덱스만 날짜 텍스트를 반환
+            callback: function(val, index) {
+              return showIndices.has(index) ? dates[index].slice(4,6) + "-" + dates[index].slice(6,8) : "";
+            }
+          }
+        },
+        y: { grid: { display: false } }
+      }
     }
   });
 }
