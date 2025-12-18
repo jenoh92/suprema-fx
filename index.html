@@ -6,6 +6,7 @@
 <title>슈프리마 환율 통합 관리 시스템</title>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 :root{
@@ -28,9 +29,13 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 .container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); }
 .top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-shrink: 0; }
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
-button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
 
-/* 메인 그리드 높이 동기화 */
+/* 버튼 스타일 */
+button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
+button:hover{ background:var(--burgundy-dark); }
+.btn-excel { background:#A12A44; } /* 엑셀 버튼 색상 통일 */
+
+/* 메인 그리드 */
 .main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
 .card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
 
@@ -45,10 +50,10 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* 차트 박스 (가로줄 제거 반영) */
+/* 차트 컨테이너 */
 .chart-container { flex: 1; min-height: 0; position: relative; }
 
-/* 하단 섹션 */
+/* 하단 슈프리마 섹션 */
 .footer-card { flex-shrink: 0; }
 .suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
@@ -69,8 +74,10 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
   <div class="container">
     <div class="top-nav">
+      <span style="font-size:14px; font-weight:700;">조회일:</span>
       <input type="date" id="dateInput">
-      <button id="btnSearch">데이터 조회</button>
+      <button id="btnSearch">조회</button>
+      <button id="btnExcel" class="btn-excel">엑셀 내려받기</button>
       <span id="subInfo" style="font-size:12px; color:var(--text-gray); margin-left: auto;"></span>
     </div>
 
@@ -78,7 +85,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       <div class="card" style="position:relative;">
         <div id="tableLoading" class="loading-overlay">로딩중...</div>
         <div class="table-wrap">
-          <table>
+          <table id="mainTable">
             <thead>
               <tr>
                 <th>통화</th>
@@ -110,7 +117,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
         <div class="suprema-calc-box">
           <select id="selYear"></select>
           <select id="selMonth"></select>
-          <button id="btnCalc">계산</button>
+          <button id="btnCalc">계산하기</button>
         </div>
         <div class="res-card">
           <div class="res-item">
@@ -160,6 +167,7 @@ function search(){
       renderMainTable(ymd);
       updateChart(globalRows, ymd, $("#chartCurrency").val());
       calculateSuprema();
+      $("#subInfo").text("기준: " + d);
     }
   });
 }
@@ -195,8 +203,6 @@ function updateChart(rows, ymd, label){
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
   const dates = cRows.map(r=>r.TIME);
-  const values = cRows.map(r=>pNum(r.DATA_VALUE));
-  
   const monthEnds = {};
   dates.forEach((d, i) => monthEnds[d.slice(0,6)] = i);
   const showIndices = new Set(Object.values(monthEnds));
@@ -206,23 +212,25 @@ function updateChart(rows, ymd, label){
     type: "line",
     data: {
       labels: dates,
-      datasets: [{ data: values, borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
+      datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
     },
     options: {
-      responsive: true, 
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: { 
-            grid: { display: false },
-            ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } 
-        },
-        y: { 
-            grid: { display: false } // ✅ 가로줄(그리드) 제거
-        }
+        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : (i === dates.length-1 ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null) } },
+        y: { grid: { display: false } }
       }
     }
   });
+}
+
+// 엑셀 다운로드 함수
+function downloadExcel(){
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.table_to_sheet(document.getElementById("mainTable"));
+  XLSX.utils.book_append_sheet(wb, ws, "환율데이터");
+  XLSX.writeFile(wb, `Suprema_ExchangeRate_${$("#dateInput").val()}.xlsx`);
 }
 
 function calculateSuprema(){
@@ -249,7 +257,9 @@ $(function(){
   for(let y=today.getFullYear(); y>=today.getFullYear()-1; y--) $("#selYear").append(`<option value="${y}">${y}년</option>`);
   for(let m=1; m<=12; m++) $("#selMonth").append(`<option value="${m}" ${m==today.getMonth()+1?'selected':''}>${m}월</option>`);
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
+  
   $("#btnSearch").on("click", search);
+  $("#btnExcel").on("click", downloadExcel);
   $("#btnCalc").on("click", calculateSuprema);
   $("#chartCurrency").on("change", () => updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val()));
   search();
@@ -257,3 +267,4 @@ $(function(){
 </script>
 </body>
 </html>
+
