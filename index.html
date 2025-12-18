@@ -19,7 +19,7 @@
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; }
 
-/* 헤더 크기 확대 */
+/* 헤더 크기 확대 및 출처 정렬 */
 .header{ display:flex; align-items:center; gap:15px; padding:15px 30px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:32px; }
 .header-title .title{ font-size:22px; font-weight:800; color:var(--burgundy); }
@@ -32,11 +32,11 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 input[type="date"], select { padding:8px 12px; border-radius:6px; border:1px solid #ccc; font-size:16px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:10px 24px; border-radius:6px; cursor:pointer; font-weight:600; font-size:16px; }
 
-/* 메인 그리드: 화면을 꽉 채우도록 비율 조정 */
+/* 메인 그리드 */
 .main-content{ display:grid; grid-template-columns: 1.1fr 1fr; gap:20px; align-items: start; }
 .card{ background:var(--card); border-radius:15px; padding:25px; box-shadow:0 4px 12px rgba(0,0,0,0.08); border:1px solid var(--border); }
 
-/* 테이블 스타일: 폰트 키우고 여백 최적화 */
+/* 테이블 스타일 */
 .table-wrap{ border-radius:12px; border:1px solid var(--border); overflow: hidden; }
 table{ width:100%; border-collapse:collapse; font-size: 15px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:15px 10px; border-bottom:2px solid var(--border); font-size: 16px; }
@@ -46,11 +46,11 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* 그래프 영역: 테이블 높이에 맞춰 시원하게 확대 */
+/* 그래프 영역 */
 .chart-card { display: flex; flex-direction: column; min-height: 450px; }
 .chart-container { flex: 1; position: relative; padding-top: 15px; }
 
-/* 하단 계산기 영역 확대 */
+/* 하단 계산기 영역 */
 .suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 12px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 12px; }
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 25px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
@@ -65,7 +65,12 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
 <body>
   <div class="header">
     <img src="Suprema_logo_basic.jpg" alt="Logo">
-    <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
+    <div class="header-title">
+        <div class="title">환율 통합 조회 시스템</div>
+    </div>
+    <div style="margin-left: auto; font-size: 13px; color: #888; font-weight: 500;">
+        출처: 한국은행 경제통계시스템 (ECOS)
+    </div>
   </div>
 
   <div class="container">
@@ -131,6 +136,7 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
   </div>
 
 <script>
+// (스크립트 로직 - 말일 날짜 고정 및 1년 데이터 호출 유지)
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -171,112 +177,5 @@ function search(){
 function renderMainTable(ymd){
   $("#tbody").empty();
   CURRENCIES.forEach(c=>{
-    const cRows = globalRows.filter(r=>r.ITEM_NAME1.includes(c.key)).sort((a,b)=>a.TIME.localeCompare(b.TIME));
-    const idx = cRows.findIndex(r=>r.TIME === ymd);
-    const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
-    const prev = idx > 0 ? pNum(cRows[idx-1].DATA_VALUE) : null;
-    
-    let diffHtml = "";
-    if(curr && prev){
-      const diff = curr - prev;
-      diffHtml = diff > 0 ? `<span class="rate-diff up">▲${fNum(diff)}</span>` : diff < 0 ? `<span class="rate-diff down">▼${fNum(Math.abs(diff))}</span>` : "";
-    }
-    const yavg = calcAvg(cRows, ymd.slice(0,4)+"0101", ymd);
-    const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-    const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-    
-    $("#tbody").append(`<tr><td style="text-align:left; padding-left:25px; font-weight:700;">${c.label}</td><td><strong style="font-size:17px;">${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
-  });
-}
+    const cRows = globalRows.filter(r=>r.ITEM_NAME1.includes(c.key)).sort((a,b)=>a.TIME.localeCompare(b.TIME
 
-function updateChart(rows, ymd, label){
-  const key = CURRENCIES.find(c=>c.label===label)?.key;
-  const threeStart = toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1));
-  const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
-  
-  const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
-  gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
-
-  const dates = cRows.map(r=>r.TIME);
-  const monthEnds = {};
-  dates.forEach((d, i) => {
-    monthEnds[d.slice(0,6)] = i; 
-  });
-  const showIndices = new Set(Object.values(monthEnds));
-
-  if (window._chartObj) window._chartObj.destroy();
-  window._chartObj = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: dates,
-      datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 3, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { 
-          grid: { display: false },
-          ticks: { 
-            autoSkip: false,
-            font: { size: 13, weight: 'bold' },
-            callback: function(val, index) {
-              return showIndices.has(index) ? dates[index].slice(4,6) + "-" + dates[index].slice(6,8) : "";
-            }
-          }
-        },
-        y: { 
-          grid: { color: '#f0f0f0' },
-          ticks: { font: { size: 13 } }
-        }
-      }
-    }
-  });
-}
-
-function downloadExcel(){
-  const wb = XLSX.utils.book_new();
-  const table = document.getElementById("mainTable");
-  const clone = table.cloneNode(true);
-  $(clone).find(".rate-diff").remove();
-  const ws = XLSX.utils.table_to_sheet(clone);
-  XLSX.utils.book_append_sheet(wb, ws, "환율데이터");
-  XLSX.writeFile(wb, `Suprema_Rate_${$("#dateInput").val()}.xlsx`);
-}
-
-function calculateSuprema(){
-  const year = parseInt($("#selYear").val());
-  const month = parseInt($("#selMonth").val());
-  const cRows = globalRows.filter(r=>r.ITEM_NAME1.includes("미국달러"));
-  const pavg = calcAvg(cRows, toYmd(new Date(year, month-2, 1)), toYmd(new Date(year, month-1, 0)));
-  const m3avg = calcAvg(cRows, toYmd(new Date(year, month-4, 1)), toYmd(new Date(year, month-1, 0)));
-  if(pavg && m3avg) {
-      const wonka = Math.max(pavg, m3avg);
-      $("#resWonka").text(fNum(wonka) + " 원");
-      $("#resPanka").text(fNum(wonka - 50) + " 원");
-  }
-}
-
-function calcAvg(cRows, s, e){
-  const v = cRows.filter(r=>r.TIME >= s && r.TIME <= e).map(r=>pNum(r.DATA_VALUE)).filter(n=>n!=null);
-  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
-}
-
-$(function(){
-  const today = new Date();
-  $("#dateInput").val(today.toISOString().split('T')[0]);
-  for(let y=today.getFullYear(); y>=today.getFullYear()-1; y--) $("#selYear").append(`<option value="${y}">${y}년</option>`);
-  for(let m=1; m<=12; m++) $("#selMonth").append(`<option value="${m}" ${m==today.getMonth()+1?'selected':''}>${m}월</option>`);
-  CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
-  
-  $("#btnSearch").on("click", search);
-  $("#btnExcel").on("click", downloadExcel);
-  $("#btnCalc").on("click", calculateSuprema);
-  $("#chartCurrency").on("change", () => updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val()));
-  search();
-});
-</script>
-</body>
-</html>
