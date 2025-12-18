@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
@@ -20,35 +20,36 @@
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow: hidden; }
 
-/* 레이아웃 최적화 */
+/* 레이아웃 */
 .header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:26px; }
 .header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
 
 .container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); }
-.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:10px; border:1px solid var(--border); }
-
-.top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-shrink: 0; }
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; }
 
-.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; }
+/* 메인 그리드 높이 동기화 */
+.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
+.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
 
 /* 테이블 스타일 */
-.table-wrap{ height: 100%; overflow: auto; border-radius:10px; border:1px solid var(--border); }
+.table-wrap{ flex: 1; overflow: auto; border-radius:10px; border:1px solid var(--border); }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; z-index: 1; }
 td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
 
-/* 증감 스타일 복구 */
+/* 증감 스타일 */
 .rate-diff { font-size: 11px; margin-left: 4px; font-weight: 600; }
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* 차트 박스 */
-.chart-box{ position:relative; height: 100%; width: 100%; }
+/* 차트 박스 (가로줄 제거 반영) */
+.chart-container { flex: 1; min-height: 0; position: relative; }
 
-/* 하단 슈프리마 섹션 (슬림 버전) */
+/* 하단 섹션 */
+.footer-card { flex-shrink: 0; }
 .suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
@@ -74,7 +75,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
     </div>
 
     <div class="main-content">
-      <div class="card" style="position:relative; display:flex; flex-direction:column;">
+      <div class="card" style="position:relative;">
         <div id="tableLoading" class="loading-overlay">로딩중...</div>
         <div class="table-wrap">
           <table>
@@ -92,16 +93,18 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
         </div>
       </div>
 
-      <div class="card" style="display:flex; flex-direction:column;">
+      <div class="card">
         <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
           <select id="chartCurrency" style="font-size:12px;"></select>
         </div>
-        <div class="chart-box"><canvas id="rateChart"></canvas></div>
+        <div class="chart-container">
+          <canvas id="rateChart"></canvas>
+        </div>
       </div>
     </div>
 
-    <div class="card" style="margin-bottom: 0;">
+    <div class="card footer-card">
       <div style="font-size: 15px; font-weight: 900; color: var(--burgundy); margin-bottom: 8px;">※ 슈프리마 적용환율 상세 (USD)</div>
       <div class="suprema-footer">
         <div class="suprema-calc-box">
@@ -174,11 +177,9 @@ function renderMainTable(ymd){
       const diff = curr - prev;
       diffHtml = diff > 0 ? `<span class="rate-diff up">▲${fNum(diff)}</span>` : diff < 0 ? `<span class="rate-diff down">▼${fNum(Math.abs(diff))}</span>` : "";
     }
-
     const yavg = calcAvg(cRows, ymd.slice(0,4)+"0101", ymd);
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-    
     $("#tbody").append(`<tr><td>${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
   });
 }
@@ -189,14 +190,13 @@ function updateChart(rows, ymd, label){
   const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
   
   const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.3)');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
   const dates = cRows.map(r=>r.TIME);
   const values = cRows.map(r=>pNum(r.DATA_VALUE));
   
-  // 월말 날짜만 추출 (X축 표시용)
   const monthEnds = {};
   dates.forEach((d, i) => monthEnds[d.slice(0,6)] = i);
   const showIndices = new Set(Object.values(monthEnds));
@@ -209,14 +209,17 @@ function updateChart(rows, ymd, label){
       datasets: [{ data: values, borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true, 
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
         x: { 
             grid: { display: false },
             ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } 
         },
-        y: { grid: { color: '#f0f0f0' } }
+        y: { 
+            grid: { display: false } // ✅ 가로줄(그리드) 제거
+        }
       }
     }
   });
@@ -254,4 +257,3 @@ $(function(){
 </script>
 </body>
 </html>
-
