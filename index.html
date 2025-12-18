@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>환율 조회 (그라데이션 차트 적용)</title>
+<title>환율 조회 (한국은행 ECOS · 매매기준율 기준)</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -74,6 +74,7 @@ body{
   margin-bottom: 14px;
 }
 
+/* 상단 컨트롤 */
 .topbar{
   display:flex;
   align-items:center;
@@ -86,6 +87,12 @@ body{
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
+}
+.controls label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  white-space:nowrap;
 }
 #dateInput{
   padding:6px 10px;
@@ -120,6 +127,7 @@ button:hover{ background:var(--burgundy-dark); }
   .grid{ grid-template-columns: 1fr; }
 }
 
+/* 테이블 스타일 */
 .table-wrap{
   overflow:auto;
   border-radius:12px;
@@ -138,13 +146,17 @@ th{
   padding:12px 10px;
   border-bottom:2px solid #ddd;
   text-align:center;
+  white-space:nowrap;
 }
 td{
   padding:12px 10px;
   border-bottom:1px solid #eee;
-  text-align:center;
+  text-align:center; /* ✅ 전체 셀 가운데 정렬 */
+  white-space:nowrap;
 }
+tbody tr:hover{ background:#fafafa; }
 
+/* 그래프 섹션 */
 .chart-header{
   display:flex;
   align-items:center;
@@ -153,8 +165,17 @@ td{
   margin-bottom:10px;
   flex-wrap:wrap;
 }
-.chart-title{ font-size:16px; font-weight:900; }
-select{ padding:6px 10px; border-radius:8px; border:1px solid #aaa; font-size:15px; background:#fff; }
+.chart-title{
+  font-size:16px;
+  font-weight:900;
+}
+select{
+  padding:6px 10px;
+  border-radius:8px;
+  border:1px solid #aaa;
+  font-size:15px;
+  background:#fff;
+}
 .chart-box{
   position: relative;
   border-radius:12px;
@@ -179,7 +200,9 @@ select{ padding:6px 10px; border-radius:8px; border:1px solid #aaa; font-size:15
     <div class="card">
       <div class="topbar">
         <div class="controls">
-          <label>조회일: <input type="date" id="dateInput"></label>
+          <label>조회일:
+            <input type="date" id="dateInput">
+          </label>
           <button id="btnSearch">조회</button>
           <button id="btnExcel">엑셀 내려받기</button>
         </div>
@@ -210,7 +233,9 @@ select{ padding:6px 10px; border-radius:8px; border:1px solid #aaa; font-size:15
         <div class="chart-header">
           <div class="chart-title">환율 변동 추이 (최근 3개월)</div>
           <div>
-            <label>통화: <select id="chartCurrency"></select></label>
+            <label>통화:
+              <select id="chartCurrency"></select>
+            </label>
           </div>
         </div>
         <div class="chart-box">
@@ -222,6 +247,7 @@ select{ padding:6px 10px; border-radius:8px; border:1px solid #aaa; font-size:15
 
 <script>
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
+
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
   { key: "멕시코", label: "MXN (멕시코 페소)" },
@@ -236,13 +262,16 @@ function formatNumber(x){
   if (x == null) return "-";
   return Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
+
 function parseNumber(x){
   const n = Number(String(x).replace(/,/g,""));
   return isNaN(n) ? null : n;
 }
+
 function ymdFromDate(d){
   return `${d.getFullYear()}${("0"+(d.getMonth()+1)).slice(-2)}${("0"+d.getDate()).slice(-2)}`;
 }
+
 function dateFromYmd(ymd){
   return new Date(ymd.slice(0,4), Number(ymd.slice(4,6))-1, ymd.slice(6,8));
 }
@@ -274,6 +303,15 @@ function getRateOnDate(rows, key, ymd){
   return v;
 }
 
+function buildMonthEndIndexSet(dates){
+  const lastIndexByMonth = {};
+  for (let i=0; i<dates.length; i++){
+    const ym = dates[i].slice(0,6);
+    lastIndexByMonth[ym] = i;
+  }
+  return new Set(Object.values(lastIndexByMonth));
+}
+
 function updateChart(rows, queryYmd, label){
   const cfg = CURRENCIES.find(c=>c.label===label);
   if (!cfg) return;
@@ -300,8 +338,8 @@ function updateChart(rows, queryYmd, label){
   
   // ✅ 그라데이션 생성 (위에서 아래로)
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');   // 시작 색상 (버건디 투명도 40%)
-  gradient.addColorStop(1, 'rgba(161, 42, 68, 0.0)');   // 끝 색상 (투명)
+  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
+  gradient.addColorStop(1, 'rgba(161, 42, 68, 0.0)');
 
   if (window._chartObj) window._chartObj.destroy();
 
@@ -314,8 +352,8 @@ function updateChart(rows, queryYmd, label){
         borderColor: "#A12A44",
         borderWidth: 2,
         pointRadius: 0,
-        fill: true,                  // ✅ 영역 채우기 활성화
-        backgroundColor: gradient,   // ✅ 그라데이션 배경 적용
+        fill: true,
+        backgroundColor: gradient,
         tension: 0.2
       }]
     },
@@ -332,7 +370,7 @@ function updateChart(rows, queryYmd, label){
 }
 
 function search(){
-  $("#msg").removeClass("error").text("조회 중...");
+  $("#msg").removeClass("error").text("데이터를 불러오는 중...");
   $("#tbody").empty();
   const d = $("#dateInput").val();
   if (!d) return;
@@ -352,7 +390,7 @@ function search(){
       $("#msg").text("");
       const rows = data?.StatisticSearch?.row || [];
       window._lastRows = rows;
-      if (!rows.length){ $("#msg").addClass("error").text("데이터가 없습니다."); return; }
+      if (!rows.length){ $("#msg").addClass("error").text("조회된 데이터가 없습니다."); return; }
 
       const actualYearStart = getActualYearStart(rows, qd.getFullYear());
       CURRENCIES.forEach(c=>{
@@ -360,9 +398,19 @@ function search(){
         const yavg = calcAverage(rows, c.key, actualYearStart, ymd);
         const pavg = calcAverage(rows, c.key, prevFirst, prevLast);
         const m3avg= calcAverage(rows, c.key, threeStart, prevLast);
-        $("#tbody").append(`<tr><td>${c.label}</td><td style="font-weight:700;">${formatNumber(fr)}</td><td>${formatNumber(yavg)}</td><td>${formatNumber(pavg)}</td><td>${formatNumber(m3avg)}</td></tr>`);
+        
+        // ✅ <td> 태그 내 정렬 관련 스타일을 제거하여 CSS의 center 정렬이 적용되게 함
+        $("#tbody").append(`
+          <tr>
+            <td>${c.label}</td>
+            <td style="font-weight:700;">${formatNumber(fr)}</td>
+            <td>${formatNumber(yavg)}</td>
+            <td>${formatNumber(pavg)}</td>
+            <td>${formatNumber(m3avg)}</td>
+          </tr>
+        `);
       });
-      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart})`);
+      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart.slice(0,4)}-${actualYearStart.slice(4,6)}-${actualYearStart.slice(6,8)})`);
       updateChart(rows, ymd, $("#chartCurrency").val());
     }
   });
@@ -377,7 +425,7 @@ $(function(){
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.table_to_sheet(document.querySelector("table"));
       XLSX.utils.book_append_sheet(wb, ws, "환율");
-      XLSX.writeFile(wb, "환율조회.xlsx");
+      XLSX.writeFile(wb, `환율조회_${$("#dateInput").val()}.xlsx`);
   });
   $("#chartCurrency").on("change", function(){
     if (window._lastRows) updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $(this).val());
@@ -387,3 +435,4 @@ $(function(){
 </script>
 </body>
 </html>
+
