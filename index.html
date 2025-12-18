@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>환율 조회 (한국은행 ECOS · 매매기준율 기준)</title>
+<title>환율 조회 (그라데이션 차트 적용)</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -74,7 +74,6 @@ body{
   margin-bottom: 14px;
 }
 
-/* 상단 컨트롤 */
 .topbar{
   display:flex;
   align-items:center;
@@ -87,12 +86,6 @@ body{
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
-}
-.controls label{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  white-space:nowrap;
 }
 #dateInput{
   padding:6px 10px;
@@ -116,7 +109,7 @@ button:hover{ background:var(--burgundy-dark); }
 .info{ font-size:13px; color:#555; margin-top:6px; }
 .error{ color:#d00; font-weight:700; margin-top:10px; }
 
-/* 그리드 레이아웃 */
+/* 2열 그리드 */
 .grid{
   display:grid;
   grid-template-columns: 1.25fr 1fr;
@@ -127,7 +120,6 @@ button:hover{ background:var(--burgundy-dark); }
   .grid{ grid-template-columns: 1fr; }
 }
 
-/* 테이블 스타일 */
 .table-wrap{
   overflow:auto;
   border-radius:12px;
@@ -146,17 +138,13 @@ th{
   padding:12px 10px;
   border-bottom:2px solid #ddd;
   text-align:center;
-  white-space:nowrap;
 }
 td{
   padding:12px 10px;
   border-bottom:1px solid #eee;
   text-align:center;
-  white-space:nowrap;
 }
-tbody tr:hover{ background:#fafafa; }
 
-/* 차트 섹션 */
 .chart-header{
   display:flex;
   align-items:center;
@@ -165,17 +153,8 @@ tbody tr:hover{ background:#fafafa; }
   margin-bottom:10px;
   flex-wrap:wrap;
 }
-.chart-title{
-  font-size:16px;
-  font-weight:900;
-}
-select{
-  padding:6px 10px;
-  border-radius:8px;
-  border:1px solid #aaa;
-  font-size:15px;
-  background:#fff;
-}
+.chart-title{ font-size:16px; font-weight:900; }
+select{ padding:6px 10px; border-radius:8px; border:1px solid #aaa; font-size:15px; background:#fff; }
 .chart-box{
   position: relative;
   border-radius:12px;
@@ -189,7 +168,7 @@ select{
 
 <body>
   <div class="header">
-    <img src="Suprema_logo_basic.jpg" alt="Suprema Logo">
+    <img src="Suprema_logo_basic.jpg" alt="Logo">
     <div class="header-title">
       <div class="title">환율 조회</div>
       <div class="source">(한국은행 ECOS)</div>
@@ -200,9 +179,7 @@ select{
     <div class="card">
       <div class="topbar">
         <div class="controls">
-          <label>조회일:
-            <input type="date" id="dateInput">
-          </label>
+          <label>조회일: <input type="date" id="dateInput"></label>
           <button id="btnSearch">조회</button>
           <button id="btnExcel">엑셀 내려받기</button>
         </div>
@@ -233,9 +210,7 @@ select{
         <div class="chart-header">
           <div class="chart-title">환율 변동 추이 (최근 3개월)</div>
           <div>
-            <label>통화:
-              <select id="chartCurrency"></select>
-            </label>
+            <label>통화: <select id="chartCurrency"></select></label>
           </div>
         </div>
         <div class="chart-box">
@@ -247,7 +222,6 @@ select{
 
 <script>
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
-
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
   { key: "멕시코", label: "MXN (멕시코 페소)" },
@@ -258,35 +232,25 @@ const CURRENCIES = [
   { key: "인도루피", label: "INR (인도 루피)" }
 ];
 
-/* 유틸리티 함수 */
 function formatNumber(x){
   if (x == null) return "-";
-  const n = Number(x);
-  return isNaN(n) ? "-" : n.toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-
 function parseNumber(x){
   const n = Number(String(x).replace(/,/g,""));
   return isNaN(n) ? null : n;
 }
-
 function ymdFromDate(d){
   return `${d.getFullYear()}${("0"+(d.getMonth()+1)).slice(-2)}${("0"+d.getDate()).slice(-2)}`;
 }
-
 function dateFromYmd(ymd){
   return new Date(ymd.slice(0,4), Number(ymd.slice(4,6))-1, ymd.slice(6,8));
 }
 
-// ✅ 연초 평균 계산 시 실제 데이터가 존재하는 첫 영업일을 찾는 함수
 function getActualYearStart(rows, year) {
   const yearStr = String(year);
-  const yearRows = rows
-    .filter(r => String(r.TIME).startsWith(yearStr))
-    .map(r => String(r.TIME));
-  
-  if (yearRows.length === 0) return yearStr + "0101";
-  return yearRows.sort()[0]; // 정렬 후 가장 빠른 날짜(영업일) 반환
+  const yearRows = rows.filter(r => String(r.TIME).startsWith(yearStr)).map(r => String(r.TIME));
+  return yearRows.length === 0 ? yearStr + "0101" : yearRows.sort()[0];
 }
 
 function calcAverage(rows, key, start, end){
@@ -296,56 +260,49 @@ function calcAverage(rows, key, start, end){
     const t = String(r.TIME);
     if (t < start || t > end) return;
     const v = parseNumber(r.DATA_VALUE);
-    if (v == null) return;
-    if (!(t in map)) map[t] = v;
+    if (v != null && !(t in map)) map[t] = v;
   });
   const vals = Object.values(map);
-  if (vals.length === 0) return null;
-  return vals.reduce((a,b)=>a+b,0)/vals.length;
+  return vals.length === 0 ? null : vals.reduce((a,b)=>a+b,0)/vals.length;
 }
 
 function getRateOnDate(rows, key, ymd){
   let v = null;
   rows.forEach(r=>{
-    if (!String(r.ITEM_NAME1).includes(key)) return;
-    if (String(r.TIME) === ymd) v = parseNumber(r.DATA_VALUE);
+    if (String(r.ITEM_NAME1).includes(key) && String(r.TIME) === ymd) v = parseNumber(r.DATA_VALUE);
   });
   return v;
 }
 
-function buildMonthEndIndexSet(dates){
-  const lastIndexByMonth = {};
-  for (let i=0; i<dates.length; i++){
-    const ym = dates[i].slice(0,6);
-    lastIndexByMonth[ym] = i;
-  }
-  return new Set(Object.values(lastIndexByMonth));
-}
-
-/* 차트 업데이트 */
 function updateChart(rows, queryYmd, label){
   const cfg = CURRENCIES.find(c=>c.label===label);
   if (!cfg) return;
   const key = cfg.key;
-
   const qd = dateFromYmd(queryYmd);
   const threeStart = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-3, 1));
 
   const map = {};
   rows.forEach(r=>{
-    if (!String(r.ITEM_NAME1).includes(key)) return;
-    const t = String(r.TIME);
-    if (t < threeStart || t > queryYmd) return;
-    const v = parseNumber(r.DATA_VALUE);
-    if (v != null && !(t in map)) map[t] = v;
+    if (String(r.ITEM_NAME1).includes(key)){
+        const t = String(r.TIME);
+        if (t >= threeStart && t <= queryYmd) {
+            const v = parseNumber(r.DATA_VALUE);
+            if (v != null) map[t] = v;
+        }
+    }
   });
 
   const dates = Object.keys(map).sort();
   const labels = dates.map(d=>`${d.slice(4,6)}-${d.slice(6,8)}`);
   const values = dates.map(d=>map[d]);
-  const monthEndIdx = buildMonthEndIndexSet(dates);
 
   const ctx = document.getElementById("rateChart").getContext("2d");
+  
+  // ✅ 그라데이션 생성 (위에서 아래로)
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');   // 시작 색상 (버건디 투명도 40%)
+  gradient.addColorStop(1, 'rgba(161, 42, 68, 0.0)');   // 끝 색상 (투명)
+
   if (window._chartObj) window._chartObj.destroy();
 
   window._chartObj = new Chart(ctx, {
@@ -357,7 +314,8 @@ function updateChart(rows, queryYmd, label){
         borderColor: "#A12A44",
         borderWidth: 2,
         pointRadius: 0,
-        fill: false,
+        fill: true,                  // ✅ 영역 채우기 활성화
+        backgroundColor: gradient,   // ✅ 그라데이션 배경 적용
         tension: 0.2
       }]
     },
@@ -366,115 +324,64 @@ function updateChart(rows, queryYmd, label){
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: {
-        x: {
-          grid: { display: false },
-          ticks: {
-            maxRotation: 0,
-            autoSkip: false,
-            callback: function(value, index) {
-              return monthEndIdx.has(index) ? this.getLabelForValue(value) : "";
-            }
-          }
-        },
+        x: { grid: { display: false } },
         y: { grid: { color: '#f5f5f5' } }
       }
     }
   });
 }
 
-/* 데이터 조회 함수 */
 function search(){
-  $("#msg").removeClass("error").text("데이터를 불러오는 중...");
+  $("#msg").removeClass("error").text("조회 중...");
   $("#tbody").empty();
-
   const d = $("#dateInput").val();
-  if (!d) return alert("조회일을 선택하세요.");
+  if (!d) return;
   const ymd = d.replace(/-/g,"");
-
   const qd = dateFromYmd(ymd);
-  const yearStartSearch = qd.getFullYear() + "0101"; 
+  const yearStartSearch = qd.getFullYear() + "0101";
   const prevFirst = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-1, 1));
   const prevLast  = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0));
   const threeStart = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-3, 1));
-
+  
   const minStart = (yearStartSearch < threeStart ? yearStartSearch : threeStart);
   const url = `${BACKEND}?start=${minStart}&end=${ymd}&callback=?`;
 
   $.ajax({
-    url: url,
-    dataType: "jsonp",
+    url: url, dataType: "jsonp",
     success: function(data){
       $("#msg").text("");
       const rows = data?.StatisticSearch?.row || [];
       window._lastRows = rows;
+      if (!rows.length){ $("#msg").addClass("error").text("데이터가 없습니다."); return; }
 
-      if (!rows.length){
-        $("#msg").addClass("error").text("조회된 데이터가 없습니다. (공휴일/미공시)");
-        return;
-      }
-
-      // ✅ 실제 데이터 시작일 탐색
       const actualYearStart = getActualYearStart(rows, qd.getFullYear());
-
       CURRENCIES.forEach(c=>{
         const fr   = getRateOnDate(rows, c.key, ymd);
         const yavg = calcAverage(rows, c.key, actualYearStart, ymd);
         const pavg = calcAverage(rows, c.key, prevFirst, prevLast);
         const m3avg= calcAverage(rows, c.key, threeStart, prevLast);
-
-        $("#tbody").append(`
-          <tr>
-            <td style="text-align:left; padding-left:20px;">${c.label}</td>
-            <td style="font-weight:700;">${formatNumber(fr)}</td>
-            <td>${formatNumber(yavg)}</td>
-            <td>${formatNumber(pavg)}</td>
-            <td>${formatNumber(m3avg)}</td>
-          </tr>
-        `);
+        $("#tbody").append(`<tr><td>${c.label}</td><td style="font-weight:700;">${formatNumber(fr)}</td><td>${formatNumber(yavg)}</td><td>${formatNumber(pavg)}</td><td>${formatNumber(m3avg)}</td></tr>`);
       });
-
-      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart.slice(0,4)}-${actualYearStart.slice(4,6)}-${actualYearStart.slice(6,8)})`);
+      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart})`);
       updateChart(rows, ymd, $("#chartCurrency").val());
-    },
-    error: function(){
-      $("#msg").addClass("error").text("데이터 통신 중 오류가 발생했습니다.");
     }
   });
 }
 
-/* 엑셀 다운로드 */
-function downloadExcel(){
-  const header = [];
-  $("table thead th").each(function(){ header.push($(this).text().trim()); });
-  const data = [header];
-  $("#tbody tr").each(function(){
-    const row = [];
-    $(this).find("td").each(function(){ row.push($(this).text().trim()); });
-    data.push(row);
-  });
-  if (data.length <= 1) return alert("조회된 데이터가 없습니다.");
-  
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  XLSX.utils.book_append_sheet(wb, ws, "환율");
-  XLSX.writeFile(wb, `환율조회_${$("#dateInput").val()}.xlsx`);
-}
-
-/* 초기화 */
 $(function(){
   const t = new Date();
-  $("#dateInput").val(`${t.getFullYear()}-${("0"+(t.getMonth()+1)).slice(-2)}-${("0"+t.getDate()).slice(-2)}`);
-  
-  CURRENCIES.forEach(c=>{
-    $("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`);
-  });
-
+  $("#dateInput").val(t.toISOString().split('T')[0]);
+  CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
   $("#btnSearch").on("click", search);
-  $("#btnExcel").on("click", downloadExcel);
+  $("#btnExcel").on("click", function(){
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.table_to_sheet(document.querySelector("table"));
+      XLSX.utils.book_append_sheet(wb, ws, "환율");
+      XLSX.writeFile(wb, "환율조회.xlsx");
+  });
   $("#chartCurrency").on("change", function(){
     if (window._lastRows) updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $(this).val());
   });
-
   search();
 });
 </script>
