@@ -116,7 +116,7 @@ button:hover{ background:var(--burgundy-dark); }
 .info{ font-size:13px; color:#555; margin-top:6px; }
 .error{ color:#d00; font-weight:700; margin-top:10px; }
 
-/* 2열 그리드 */
+/* 그리드 레이아웃 */
 .grid{
   display:grid;
   grid-template-columns: 1.25fr 1fr;
@@ -127,7 +127,7 @@ button:hover{ background:var(--burgundy-dark); }
   .grid{ grid-template-columns: 1fr; }
 }
 
-/* 테이블 */
+/* 테이블 스타일 */
 .table-wrap{
   overflow:auto;
   border-radius:12px;
@@ -156,7 +156,7 @@ td{
 }
 tbody tr:hover{ background:#fafafa; }
 
-/* 그래프 */
+/* 차트 섹션 */
 .chart-header{
   display:flex;
   align-items:center;
@@ -175,7 +175,6 @@ select{
   border:1px solid #aaa;
   font-size:15px;
   background:#fff;
-  white-space:nowrap;
 }
 .chart-box{
   position: relative;
@@ -183,14 +182,14 @@ select{
   background:#fff;
   border:1px solid #f0f0f0;
   padding:10px;
-  height: 430px; /* 높이 고정 */
+  height: 430px;
 }
 </style>
 </head>
 
 <body>
   <div class="header">
-    <img src="Suprema_logo_basic.jpg" alt="Logo">
+    <img src="Suprema_logo_basic.jpg" alt="Suprema Logo">
     <div class="header-title">
       <div class="title">환율 조회</div>
       <div class="source">(한국은행 ECOS)</div>
@@ -219,7 +218,7 @@ select{
             <thead>
               <tr>
                 <th>통화</th>
-                <th>최초 고시환율 (원)</th>
+                <th>조회일 환율 (원)</th>
                 <th>연초~조회일 평균 (원)</th>
                 <th>전월 평균 (원)</th>
                 <th>최근 3개월 평균 (원)</th>
@@ -259,22 +258,36 @@ const CURRENCIES = [
   { key: "인도루피", label: "INR (인도 루피)" }
 ];
 
+/* 유틸리티 함수 */
 function formatNumber(x){
   if (x == null) return "-";
   const n = Number(x);
   return isNaN(n) ? "-" : n.toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
+
 function parseNumber(x){
   const n = Number(String(x).replace(/,/g,""));
   return isNaN(n) ? null : n;
 }
+
 function ymdFromDate(d){
   return `${d.getFullYear()}${("0"+(d.getMonth()+1)).slice(-2)}${("0"+d.getDate()).slice(-2)}`;
 }
+
 function dateFromYmd(ymd){
   return new Date(ymd.slice(0,4), Number(ymd.slice(4,6))-1, ymd.slice(6,8));
 }
-function getYearStartYmd(ymd){ return ymd.slice(0,4)+"0102"; }
+
+// ✅ 연초 평균 계산 시 실제 데이터가 존재하는 첫 영업일을 찾는 함수
+function getActualYearStart(rows, year) {
+  const yearStr = String(year);
+  const yearRows = rows
+    .filter(r => String(r.TIME).startsWith(yearStr))
+    .map(r => String(r.TIME));
+  
+  if (yearRows.length === 0) return yearStr + "0101";
+  return yearRows.sort()[0]; // 정렬 후 가장 빠른 날짜(영업일) 반환
+}
 
 function calcAverage(rows, key, start, end){
   const map = {};
@@ -287,7 +300,7 @@ function calcAverage(rows, key, start, end){
     if (!(t in map)) map[t] = v;
   });
   const vals = Object.values(map);
-  if (!vals.length) return null;
+  if (vals.length === 0) return null;
   return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
 
@@ -295,8 +308,7 @@ function getRateOnDate(rows, key, ymd){
   let v = null;
   rows.forEach(r=>{
     if (!String(r.ITEM_NAME1).includes(key)) return;
-    if (String(r.TIME) !== ymd) return;
-    if (v == null) v = parseNumber(r.DATA_VALUE);
+    if (String(r.TIME) === ymd) v = parseNumber(r.DATA_VALUE);
   });
   return v;
 }
@@ -304,13 +316,13 @@ function getRateOnDate(rows, key, ymd){
 function buildMonthEndIndexSet(dates){
   const lastIndexByMonth = {};
   for (let i=0; i<dates.length; i++){
-    const ymd = dates[i];
-    const ym = ymd.slice(0,6);
+    const ym = dates[i].slice(0,6);
     lastIndexByMonth[ym] = i;
   }
   return new Set(Object.values(lastIndexByMonth));
 }
 
+/* 차트 업데이트 */
 function updateChart(rows, queryYmd, label){
   const cfg = CURRENCIES.find(c=>c.label===label);
   if (!cfg) return;
@@ -329,7 +341,7 @@ function updateChart(rows, queryYmd, label){
   });
 
   const dates = Object.keys(map).sort();
-  const labels = dates.map(d=>`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`);
+  const labels = dates.map(d=>`${d.slice(4,6)}-${d.slice(6,8)}`);
   const values = dates.map(d=>map[d]);
   const monthEndIdx = buildMonthEndIndexSet(dates);
 
@@ -342,7 +354,7 @@ function updateChart(rows, queryYmd, label){
       labels: labels,
       datasets: [{
         data: values,
-        borderColor: "#78787A",
+        borderColor: "#A12A44",
         borderWidth: 2,
         pointRadius: 0,
         fill: false,
@@ -364,27 +376,28 @@ function updateChart(rows, queryYmd, label){
             }
           }
         },
-        y: { grid: { display: false } }
+        y: { grid: { color: '#f5f5f5' } }
       }
     }
   });
 }
 
+/* 데이터 조회 함수 */
 function search(){
-  $("#msg").removeClass("error").text("조회중...");
+  $("#msg").removeClass("error").text("데이터를 불러오는 중...");
   $("#tbody").empty();
 
   const d = $("#dateInput").val();
-  if (!d) return alert("조회일을 입력해주세요.");
+  if (!d) return alert("조회일을 선택하세요.");
   const ymd = d.replace(/-/g,"");
 
   const qd = dateFromYmd(ymd);
-  const yearStart = getYearStartYmd(ymd);
+  const yearStartSearch = qd.getFullYear() + "0101"; 
   const prevFirst = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-1, 1));
   const prevLast  = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth(), 0));
   const threeStart = ymdFromDate(new Date(qd.getFullYear(), qd.getMonth()-3, 1));
 
-  const minStart = (yearStart < threeStart ? yearStart : threeStart);
+  const minStart = (yearStartSearch < threeStart ? yearStartSearch : threeStart);
   const url = `${BACKEND}?start=${minStart}&end=${ymd}&callback=?`;
 
   $.ajax({
@@ -396,20 +409,23 @@ function search(){
       window._lastRows = rows;
 
       if (!rows.length){
-        $("#msg").addClass("error").text("데이터가 없습니다. (공휴일/주말 등)");
+        $("#msg").addClass("error").text("조회된 데이터가 없습니다. (공휴일/미공시)");
         return;
       }
 
+      // ✅ 실제 데이터 시작일 탐색
+      const actualYearStart = getActualYearStart(rows, qd.getFullYear());
+
       CURRENCIES.forEach(c=>{
         const fr   = getRateOnDate(rows, c.key, ymd);
-        const yavg = calcAverage(rows, c.key, yearStart, ymd);
+        const yavg = calcAverage(rows, c.key, actualYearStart, ymd);
         const pavg = calcAverage(rows, c.key, prevFirst, prevLast);
         const m3avg= calcAverage(rows, c.key, threeStart, prevLast);
 
         $("#tbody").append(`
           <tr>
-            <td>${c.label}</td>
-            <td>${formatNumber(fr)}</td>
+            <td style="text-align:left; padding-left:20px;">${c.label}</td>
+            <td style="font-weight:700;">${formatNumber(fr)}</td>
             <td>${formatNumber(yavg)}</td>
             <td>${formatNumber(pavg)}</td>
             <td>${formatNumber(m3avg)}</td>
@@ -417,55 +433,46 @@ function search(){
         `);
       });
 
-      $("#subInfo").text(`조회 기준일: ${d}`);
+      $("#subInfo").text(`기준: ${d} (연초 기산일: ${actualYearStart.slice(0,4)}-${actualYearStart.slice(4,6)}-${actualYearStart.slice(6,8)})`);
       updateChart(rows, ymd, $("#chartCurrency").val());
     },
     error: function(){
-      $("#msg").addClass("error").text("데이터 로드 실패(JSONP).");
+      $("#msg").addClass("error").text("데이터 통신 중 오류가 발생했습니다.");
     }
   });
 }
 
+/* 엑셀 다운로드 */
 function downloadExcel(){
   const header = [];
   $("table thead th").each(function(){ header.push($(this).text().trim()); });
-
   const data = [header];
   $("#tbody tr").each(function(){
     const row = [];
     $(this).find("td").each(function(){ row.push($(this).text().trim()); });
     data.push(row);
   });
-
-  if (data.length <= 1){
-    alert("먼저 조회를 눌러 데이터를 불러온 후 다운로드 해주세요.");
-    return;
-  }
-
+  if (data.length <= 1) return alert("조회된 데이터가 없습니다.");
+  
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
-  ws["!cols"] = [{ wch: 22 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 22 }];
-
   XLSX.utils.book_append_sheet(wb, ws, "환율");
-  const filename = `환율조회_${$("#dateInput").val() || "today"}.xlsx`;
-  XLSX.writeFile(wb, filename);
+  XLSX.writeFile(wb, `환율조회_${$("#dateInput").val()}.xlsx`);
 }
 
+/* 초기화 */
 $(function(){
   const t = new Date();
   $("#dateInput").val(`${t.getFullYear()}-${("0"+(t.getMonth()+1)).slice(-2)}-${("0"+t.getDate()).slice(-2)}`);
-
+  
   CURRENCIES.forEach(c=>{
     $("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`);
   });
 
   $("#btnSearch").on("click", search);
   $("#btnExcel").on("click", downloadExcel);
-
   $("#chartCurrency").on("change", function(){
-    if (!window._lastRows) return;
-    const d = $("#dateInput").val().replace(/-/g,"");
-    updateChart(window._lastRows, d, $(this).val());
+    if (window._lastRows) updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $(this).val());
   });
 
   search();
