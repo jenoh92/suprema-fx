@@ -368,24 +368,26 @@ function updateChart(rows, queryYmd, label){
         tension:0.2
       }]
     },
-    options:{
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{
-          ticks:{
-            maxRotation:0,
-            minRotation:0,
-            autoSkip:false, // 우리가 직접 숨김 처리
-            callback: function(value, index){
-              // 월말 index만 날짜 문자열 표시, 나머지는 공백
-              return monthEndIdx.has(index) ? this.getLabelForValue(value) : "";
-            }
-          }
+  options:{
+  plugins:{ legend:{ display:false } },
+  scales:{
+    x:{
+      grid:{ display:false, drawBorder:true },   // ✅ 세로 그리드 제거 + 축선 유지
+      ticks:{
+        maxRotation:0,
+        minRotation:0,
+        autoSkip:false,
+        callback: function(value, index){
+          return monthEndIdx.has(index) ? this.getLabelForValue(value) : "";
         }
       }
+    },
+    y:{
+      grid:{ display:false, drawBorder:true }    // ✅ 가로 그리드 제거 + 축선 유지
     }
-  });
+  }
 }
+
 
 function search(){
   $("#msg").removeClass("error").text("조회중...");
@@ -493,4 +495,5 @@ $(function(){
 </script>
 </body>
 </html>
+
 
