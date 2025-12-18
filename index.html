@@ -19,37 +19,39 @@
   --text-gray:#666;
 }
 *{ box-sizing:border-box; }
-body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow: hidden; }
+body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; } /* 세로 스크롤 허용 */
 
-.header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); flex-shrink: 0; }
+.header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:26px; }
 .header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
 
-.container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); }
-.top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-shrink: 0; }
+.container{ width:100%; padding:15px; display: flex; flex-direction: column; gap: 12px; max-width: 1600px; margin: 0 auto; }
+.top-nav{ display:flex; align-items:center; gap:10px; flex-shrink: 0; }
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
 
-/* ✅ 그래프 비율 조정: 테이블(1.5) : 그래프(1) 로 변경하여 그래프 가로폭을 줄임 */
-.main-content{ display:grid; grid-template-columns: 1.5fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
-.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
+/* ✅ 메인 영역: 고정 높이 대신 내용에 맞게 조절 (height 제거) */
+.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:15px; align-items: start; }
+.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); }
 
-.table-wrap{ flex: 1; overflow: auto; border-radius:10px; border:1px solid var(--border); }
+/* ✅ 테이블 구역 높이 최적화: 여백(붉은 구역) 제거 */
+.table-wrap{ border-radius:10px; border:1px solid var(--border); overflow: hidden; }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
-th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; z-index: 1; }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); }
 td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
 
 .rate-diff { font-size: 11px; margin-left: 4px; font-weight: 600; }
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* ✅ 그래프 컨테이너에 패딩을 추가하여 그래프 사이즈를 안쪽으로 줄임 */
-.chart-container { flex: 1; min-height: 0; position: relative; padding: 10px 20px 20px 10px; }
+/* ✅ 그래프 높이를 테이블 높이와 비슷하게 고정 (내용물에 맞춤) */
+.chart-card { display: flex; flex-direction: column; height: 100%; min-height: 380px; }
+.chart-container { flex: 1; position: relative; min-height: 300px; padding-top: 10px; }
 
-.footer-card { flex-shrink: 0; }
-.suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
-.suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
-.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
+/* 하단 섹션 */
+.suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
+.suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 12px; border-radius: 8px; }
+.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
 .res-item { text-align: center; }
 .res-label { font-size: 13px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
 .res-val { font-size: 22px; font-weight: 800; color: #333; }
@@ -74,13 +76,13 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
     </div>
 
     <div class="main-content">
-      <div class="card" style="position:relative;">
+      <div class="card" style="position:relative; padding:0; overflow:hidden;">
         <div id="tableLoading" class="loading-overlay">로딩중...</div>
-        <div class="table-wrap">
+        <div class="table-wrap" style="border:none; border-radius:0;">
           <table id="mainTable">
             <thead>
               <tr>
-                <th>통화</th>
+                <th style="text-align:left; padding-left:15px;">통화</th>
                 <th>조회일 환율 (원)</th>
                 <th>연초 평균</th>
                 <th>전월 평균</th>
@@ -92,8 +94,8 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
         </div>
       </div>
 
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+      <div class="card chart-card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
           <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
           <select id="chartCurrency" style="font-size:12px;"></select>
         </div>
@@ -103,8 +105,8 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       </div>
     </div>
 
-    <div class="card footer-card" style="margin-bottom: 0;">
-      <div style="font-size: 15px; font-weight: 900; color: var(--burgundy); margin-bottom: 8px;">※ 슈프리마 적용환율 상세 (USD)</div>
+    <div class="card">
+      <div style="font-size: 15px; font-weight: 900; color: var(--burgundy); margin-bottom: 10px;">※ 슈프리마 적용환율 상세 (USD)</div>
       <div class="suprema-footer">
         <div class="suprema-calc-box">
           <select id="selYear"></select>
@@ -116,7 +118,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
             <span class="res-label">최종 원가 (MAX)</span>
             <span id="resWonka" class="res-val">-</span>
           </div>
-          <div style="width: 1px; background: #eee;"></div>
+          <div style="width: 1px; background: #eee; margin: 0 20px;"></div>
           <div class="res-item">
             <span class="res-label">최종 판가 (-50원)</span>
             <span id="resPanka" class="res-val">-</span>
@@ -146,8 +148,7 @@ const toYmd = (d) => d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
-  const yearStart = ymd.slice(0,4) + "0101"; // 1년치 데이터 최적화
-  
+  const yearStart = ymd.slice(0,4) + "0101"; 
   $(".loading-overlay").show();
   
   $.ajax({
@@ -182,7 +183,7 @@ function renderMainTable(ymd){
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     
-    $("#tbody").append(`<tr><td>${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
+    $("#tbody").append(`<tr><td style="text-align:left; padding-left:15px; font-weight:600;">${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
   });
 }
 
@@ -196,25 +197,17 @@ function updateChart(rows, ymd, label){
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
-  const dates = cRows.map(r=>r.TIME);
-  const monthEnds = {};
-  dates.forEach((d, i) => monthEnds[d.slice(0,6)] = i);
-  const showIndices = new Set(Object.values(monthEnds));
-
   if (window._chartObj) window._chartObj.destroy();
   window._chartObj = new Chart(ctx, {
     type: "line",
     data: {
-      labels: dates,
+      labels: cRows.map(r=>r.TIME.slice(4,8)),
       datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) || i === dates.length-1 ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } },
-        y: { grid: { display: false } }
-      }
+      scales: { x: { grid: { display: false } }, y: { grid: { display: false } } }
     }
   });
 }
