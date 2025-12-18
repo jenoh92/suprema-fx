@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>환율 조회 (슈프리마 적용환율 추가)</title>
+<title>슈프리마 환율 통합 관리 시스템</title>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -16,49 +16,52 @@
   --burgundy-light:#F4E6EA;
   --bg:#f7f7f7;
   --card:#ffffff;
+  --border:#e0e0e0;
+  --text-gray:#666;
   --shadow:0 4px 12px rgba(0,0,0,0.08);
-  --up-color: #d60000;
-  --down-color: #0056b3;
-  --suprema-orange: #F39C12;
 }
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; }
 
 /* 헤더 */
-.header{ display:flex; align-items:center; gap:14px; padding:18px 24px; background:#fff; border-bottom:1px solid #eee; }
+.header{ display:flex; align-items:center; gap:14px; padding:18px 24px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:34px; }
 .header-title .title{ font-size:22px; font-weight:800; color:var(--burgundy); }
 
 .container{ width:100%; padding:14px; }
-.card{ background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); margin-bottom:14px; }
+.card{ background:var(--card); border-radius:14px; padding:20px; box-shadow:var(--shadow); margin-bottom:14px; border:1px solid var(--border); }
 
-/* 상단바 */
+/* 컨트롤 */
 .topbar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
 .controls{ display:flex; align-items:center; gap:10px; }
-#dateInput{ padding:6px 10px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
-button{ background:var(--burgundy); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-size:15px; }
+input[type="date"], select { padding:6px 10px; border-radius:8px; border:1px solid #ccc; font-size:15px; }
+button{ background:var(--burgundy); color:#fff; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:600; }
+button:hover{ background:var(--burgundy-dark); }
 
-/* 그리드 레이아웃 */
+/* 그리드 */
 .grid{ display:grid; grid-template-columns: 1.25fr 1fr; gap:16px; }
 @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
 
-/* 테이블 공통 */
-.table-wrap{ overflow:auto; border-radius:12px; border:1px solid #f0f0f0; }
+/* 테이블 */
+.table-wrap{ overflow:auto; border-radius:12px; border:1px solid var(--border); }
 table{ width:100%; border-collapse:collapse; min-width:700px; }
-th{ background:var(--burgundy-light); color:var(--burgundy); padding:12px; border-bottom:2px solid #ddd; text-align:center; font-weight:800; }
-td{ padding:12px; border-bottom:1px solid #eee; text-align:center; white-space:nowrap; }
-
-/* 슈프리마 전용 스타일 */
-.suprema-header { display:flex; align-items:center; gap:10px; margin-bottom:15px; }
-.suprema-header .title { font-size:18px; font-weight:900; color:#333; }
-.suprema-table th { background: #FDEBD0; color: #D35400; } /* 오렌지 계열 포인트 */
-.highlight-val { font-weight: 800; color: var(--burgundy); }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:12px; border-bottom:2px solid var(--border); font-weight:800; }
+td{ padding:12px; border-bottom:1px solid var(--border); text-align:center; }
 
 .rate-diff { font-size: 11px; margin-left: 4px; display: inline-block; vertical-align: middle; }
-.rate-up { color: var(--up-color); font-weight: 600; }
-.rate-down { color: var(--down-color); font-weight: 600; }
+.rate-up { color: #d60000; font-weight: 600; }
+.rate-down { color: #0056b3; font-weight: 600; }
 
-.chart-box{ position:relative; height:400px; border:1px solid #f0f0f0; border-radius:12px; padding:10px; background:#fff; }
+/* 하단 슈프리마 섹션 전용 */
+.suprema-box { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; align-items: start; }
+@media (max-width: 800px){ .suprema-box { grid-template-columns: 1fr; } }
+.suprema-label { font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px; }
+.result-highlight { background: #fdfdfd; border: 2px solid var(--burgundy-light); border-radius: 12px; padding: 20px; }
+.res-item { display: flex; justify-content: space-between; margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px dashed #eee; }
+.res-item:last-child { border: none; margin: 0; }
+.res-val { font-weight: 800; font-size: 18px; color: var(--burgundy); }
+
+.chart-box{ position:relative; height:400px; border:1px solid var(--border); border-radius:12px; padding:10px; background:#fff; }
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; border-radius:12px; }
 </style>
 </head>
@@ -66,7 +69,7 @@ td{ padding:12px; border-bottom:1px solid #eee; text-align:center; white-space:n
 <body>
   <div class="header">
     <img src="Suprema_logo_basic.jpg" alt="Logo">
-    <div class="header-title"><div class="title">환율 조회 <span style="font-size:14px; font-weight:400; color:#888;">(한국은행 ECOS)</span></div></div>
+    <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
   </div>
 
   <div class="container">
@@ -74,10 +77,10 @@ td{ padding:12px; border-bottom:1px solid #eee; text-align:center; white-space:n
       <div class="topbar">
         <div class="controls">
           <input type="date" id="dateInput">
-          <button id="btnSearch">조회</button>
-          <button id="btnExcel">엑셀 다운로드</button>
+          <button id="btnSearch">전체 데이터 조회</button>
+          <button id="btnExcel" style="background:#666;">엑셀 다운로드</button>
         </div>
-        <div id="subInfo" style="font-size:13px; color:#555;"></div>
+        <div id="subInfo" style="font-size:13px; color:var(--text-gray);"></div>
       </div>
     </div>
 
@@ -90,9 +93,9 @@ td{ padding:12px; border-bottom:1px solid #eee; text-align:center; white-space:n
               <tr>
                 <th>통화</th>
                 <th>조회일 환율 (원)</th>
-                <th>연초~조회일 평균</th>
+                <th>연초 평균</th>
                 <th>전월 평균</th>
-                <th>최근 3개월 평균</th>
+                <th>3개월 평균</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -100,179 +103,38 @@ td{ padding:12px; border-bottom:1px solid #eee; text-align:center; white-space:n
         </div>
       </div>
 
-      <div class="card" style="position:relative;">
+      <div class="card">
         <div class="chart-header" style="display:flex; justify-content:space-between; margin-bottom:10px; align-items:center;">
-          <div style="font-size:16px; font-weight:900;">환율 변동 추이 (최근 3개월)</div>
-          <select id="chartCurrency" style="padding:5px; border-radius:5px;"></select>
+          <div style="font-size:16px; font-weight:900; color:var(--burgundy);">환율 변동 추이</div>
+          <select id="chartCurrency"></select>
         </div>
         <div class="chart-box"><canvas id="rateChart"></canvas></div>
       </div>
     </div>
 
     <div class="card">
-      <div class="suprema-header">
-        <div class="title">※ 슈프리마 적용환율</div>
-        <div style="font-size:13px; color:#777;">(원가: 전월 및 3개월 평균 중 MAX값 적용 / 판가: 원가 - 50원)</div>
-      </div>
-      <div class="table-wrap">
-        <table class="suprema-table">
-          <thead>
-            <tr>
-              <th>구분 (통화)</th>
-              <th>전월 평균 (A)</th>
-              <th>직전 3개월 평균 (B)</th>
-              <th style="background:#FAD7A0;">원가 (MAX A or B)</th>
-              <th style="background:#F8C471;">판가 (원가 - 50원)</th>
-            </tr>
-          </thead>
-          <tbody id="supremaTbody">
-            <tr><td colspan="5" style="color:#aaa; padding:30px;">조회 버튼을 눌러주세요.</td></tr>
-          </tbody>
-        </table>
+      <div class="suprema-label">※ 슈프리마 적용환율 상세 조회 (USD)</div>
+      <div class="suprema-box">
+        <div class="filter-side">
+          <div style="margin-bottom: 15px; background: #f9f9f9; padding: 15px; border-radius: 10px;">
+            <p style="margin-top:0; font-weight:700; color:#444;">조회 월 선택</p>
+            <select id="selYear" style="width:48%"></select>
+            <select id="selMonth" style="width:48%"></select>
+            <button id="btnCalc" style="width:100%; margin-top:10px;">달러 적용환율 계산</button>
+          </div>
+          <p style="font-size:12px; color:#888; line-height:1.5;">
+            * 원가: MAX(전월평균, 3개월평균)<br>
+            * 판가: 원가 - 50원
+          </p>
+        </div>
+        
+        <div class="result-highlight" id="supremaDisplay">
+          <div style="text-align:center; color:#999; padding:20px;">월을 선택하고 계산 버튼을 눌러주세요.</div>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
-const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
-const CURRENCIES = [
-  { key: "미국달러", label: "USD (미국 달러)" },
-  { key: "멕시코", label: "MXN (멕시코 페소)" },
-  { key: "영국파운드", label: "GBP (영국 파운드)" },
-  { key: "유로", label: "EUR (유로)" },
-  { key: "아랍에미리트디르함", label: "AED (아랍에미리트 디르함)" },
-  { key: "일본엔(100엔)", label: "JPY (일본엔·100엔)" },
-  { key: "인도루피", label: "INR (인도 루피)" }
-];
-
-function formatNumber(x, f=2){ return x == null ? "-" : Number(x).toLocaleString("ko-KR",{minimumFractionDigits:f, maximumFractionDigits:f}); }
-function parseNumber(x){ return isNaN(parseFloat(String(x).replace(/,/g,""))) ? null : parseFloat(String(x).replace(/,/g,"")); }
-function ymdFromDate(d){ return d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d.getDate()).slice(-2); }
-
-function search(){
-  const d = $("#dateInput").val();
-  const ymd = d.replace(/-/g,"");
-  const yearStart = d.slice(0,4) + "0101";
-  
-  $(".loading-overlay").css("display", "flex");
-  
-  $.ajax({
-    url: `${BACKEND}?start=${yearStart}&end=${ymd}&callback=?`,
-    dataType: "jsonp",
-    success: function(data){
-      $(".loading-overlay").hide();
-      const rows = data?.StatisticSearch?.row || [];
-      if(!rows.length) { alert("데이터가 없습니다."); return; }
-      
-      window._lastRows = rows;
-      renderAll(rows, ymd);
-    }
-  });
-}
-
-function renderAll(rows, ymd){
-  const targetYear = ymd.slice(0,4);
-  const actualYearStart = rows.filter(r=>r.TIME.startsWith(targetYear)).map(r=>r.TIME).sort()[0];
-  
-  $("#tbody").empty();
-  $("#supremaTbody").empty();
-
-  CURRENCIES.forEach(c=>{
-    const cRows = rows.filter(r=>r.ITEM_NAME1.includes(c.key)).sort((a,b)=>a.TIME.localeCompare(b.TIME));
-    const idx = cRows.findIndex(r=>r.TIME === ymd);
-    const curr = idx !== -1 ? parseNumber(cRows[idx].DATA_VALUE) : null;
-    const prev = idx > 0 ? parseNumber(cRows[idx-1].DATA_VALUE) : null;
-    
-    // 평균 계산
-    const yavg = calcAvg(cRows, actualYearStart, ymd);
-    const pavg = calcAvg(cRows, ymdFromDate(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), ymdFromDate(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-    const m3avg = calcAvg(cRows, ymdFromDate(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), ymdFromDate(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
-
-    // 상단 메인 테이블 렌더링
-    let diffHtml = "";
-    if(curr && prev){
-      const diff = curr - prev;
-      diffHtml = diff > 0 ? `<span class="rate-diff rate-up">▲${formatNumber(diff)}</span>` : diff < 0 ? `<span class="rate-diff rate-down">▼${formatNumber(Math.abs(diff)}</span>` : "";
-    }
-    $("#tbody").append(`<tr><td>${c.label}</td><td><span style="font-weight:700;">${formatNumber(curr)}</span>${diffHtml}</td><td>${formatNumber(yavg)}</td><td>${formatNumber(pavg)}</td><td>${formatNumber(m3avg)}</td></tr>`);
-
-    // 🚩 슈프리마 적용환율 계산 및 렌더링
-    if(pavg && m3avg) {
-      const wonka = Math.max(pavg, m3avg); // 원가: MAX(전월, 3개월)
-      const panka = wonka - 50;           // 판가: 원가 - 50
-      
-      $("#supremaTbody").append(`
-        <tr>
-          <td style="font-weight:700;">${c.label}</td>
-          <td>${formatNumber(pavg)}</td>
-          <td>${formatNumber(m3avg)}</td>
-          <td class="highlight-val" style="background:#FEF9E7;">${formatNumber(wonka)}</td>
-          <td class="highlight-val" style="background:#FEF9E7; color:#D35400;">${formatNumber(panka)}</td>
-        </tr>
-      `);
-    }
-  });
-
-  $("#subInfo").text(`기준: ${ymd} (연초 기산일: ${actualYearStart})`);
-  updateChart(rows, ymd, $("#chartCurrency").val());
-}
-
-function calcAvg(cRows, s, e){
-  const v = cRows.filter(r=>r.TIME >= s && r.TIME <= e).map(r=>parseNumber(r.DATA_VALUE)).filter(n=>n!=null);
-  return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
-}
-
-function updateChart(rows, ymd, label){
-  const key = CURRENCIES.find(c=>c.label===label)?.key;
-  const threeStart = ymdFromDate(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1));
-  const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
-  
-  const dates = cRows.map(r=>r.TIME);
-  const values = cRows.map(r=>parseNumber(r.DATA_VALUE));
-  const monthEndIndices = {};
-  dates.forEach((d, i) => monthEndIndices[d.slice(0,6)] = i);
-  const showIndices = new Set(Object.values(monthEndIndices));
-
-  const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
-  gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
-
-  if (window._chartObj) window._chartObj.destroy();
-  window._chartObj = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels: dates,
-      datasets: [{ data: values, borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } },
-        y: { grid: { color: '#f5f5f5' } }
-      }
-    }
-  });
-}
-
-$(function(){
-  const today = new Date().toISOString().split('T')[0];
-  $("#dateInput").val(today);
-  CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
-  $("#btnSearch").on("click", search);
-  $("#btnExcel").on("click", function(){
-    const wb = XLSX.utils.book_new();
-    const ws1 = XLSX.utils.table_to_sheet(document.querySelector("table"));
-    XLSX.utils.book_append_sheet(wb, ws1, "일반환율");
-    const ws2 = XLSX.utils.table_to_sheet(document.querySelector(".suprema-table"));
-    XLSX.utils.book_append_sheet(wb, ws2, "슈프리마적용환율");
-    XLSX.writeFile(wb, `환율보고서_${$("#dateInput").val()}.xlsx`);
-  });
-  $("#chartCurrency").on("change", () => updateChart(window._lastRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val()));
-  search();
-});
-</script>
-</body>
-</html>
+const BACKEND = "
 
