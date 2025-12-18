@@ -30,7 +30,8 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
 
-.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
+/* ✅ 그래프 비율 조정: 테이블(1.5) : 그래프(1) 로 변경하여 그래프 가로폭을 줄임 */
+.main-content{ display:grid; grid-template-columns: 1.5fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
 .card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
 
 .table-wrap{ flex: 1; overflow: auto; border-radius:10px; border:1px solid var(--border); }
@@ -42,7 +43,8 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-.chart-container { flex: 1; min-height: 0; position: relative; }
+/* ✅ 그래프 컨테이너에 패딩을 추가하여 그래프 사이즈를 안쪽으로 줄임 */
+.chart-container { flex: 1; min-height: 0; position: relative; padding: 10px 20px 20px 10px; }
 
 .footer-card { flex-shrink: 0; }
 .suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
@@ -50,7 +52,6 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
 .res-item { text-align: center; }
 .res-label { font-size: 13px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
-/* 최종 원가, 판가 모두 검정색 반영 */
 .res-val { font-size: 22px; font-weight: 800; color: #333; }
 
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; }
@@ -145,9 +146,7 @@ const toYmd = (d) => d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
-  
-  // ✅ 1년치 데이터로 최적화: 조회일의 당해 연도 1월 1일로 설정
-  const yearStart = ymd.slice(0,4) + "0101"; 
+  const yearStart = ymd.slice(0,4) + "0101"; // 1년치 데이터 최적화
   
   $(".loading-overlay").show();
   
@@ -157,10 +156,7 @@ function search(){
     success: function(data){
       $(".loading-overlay").hide();
       globalRows = data?.row || data?.StatisticSearch?.row || [];
-      if(!globalRows.length) {
-        alert("해당 기간의 데이터를 찾을 수 없습니다.");
-        return;
-      }
+      if(!globalRows.length) return;
       renderMainTable(ymd);
       updateChart(globalRows, ymd, $("#chartCurrency").val());
       calculateSuprema();
@@ -169,7 +165,6 @@ function search(){
   });
 }
 
-// (이하 데이터 렌더링 및 엑셀 로직은 동일)
 function renderMainTable(ymd){
   $("#tbody").empty();
   CURRENCIES.forEach(c=>{
@@ -197,7 +192,7 @@ function updateChart(rows, ymd, label){
   const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
   
   const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
@@ -268,4 +263,3 @@ $(function(){
 </script>
 </body>
 </html>
-
