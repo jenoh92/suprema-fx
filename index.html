@@ -21,7 +21,6 @@
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow: hidden; }
 
-/* 레이아웃 */
 .header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); flex-shrink: 0; }
 .header img{ height:26px; }
 .header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
@@ -31,11 +30,9 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
 
-/* 메인 콘텐츠 높이 동기화 */
 .main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
 .card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
 
-/* 테이블 스타일 */
 .table-wrap{ flex: 1; overflow: auto; border-radius:10px; border:1px solid var(--border); }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; z-index: 1; }
@@ -47,15 +44,13 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
 .chart-container { flex: 1; min-height: 0; position: relative; }
 
-/* 하단 슈프리마 섹션 */
 .footer-card { flex-shrink: 0; }
 .suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 12px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
 .res-item { text-align: center; }
 .res-label { font-size: 13px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
-
-/* ✅ 요청하신 부분: 최종원가 색상을 검정(#333)으로 변경 */
+/* 최종 원가, 판가 모두 검정색 반영 */
 .res-val { font-size: 22px; font-weight: 800; color: #333; }
 
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; }
@@ -150,7 +145,10 @@ const toYmd = (d) => d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
-  const yearStart = (parseInt(ymd.slice(0,4)) - 1) + "0101"; 
+  
+  // ✅ 1년치 데이터로 최적화: 조회일의 당해 연도 1월 1일로 설정
+  const yearStart = ymd.slice(0,4) + "0101"; 
+  
   $(".loading-overlay").show();
   
   $.ajax({
@@ -158,8 +156,11 @@ function search(){
     dataType: "jsonp",
     success: function(data){
       $(".loading-overlay").hide();
-      globalRows = data?.StatisticSearch?.row || [];
-      if(!globalRows.length) return;
+      globalRows = data?.row || data?.StatisticSearch?.row || [];
+      if(!globalRows.length) {
+        alert("해당 기간의 데이터를 찾을 수 없습니다.");
+        return;
+      }
       renderMainTable(ymd);
       updateChart(globalRows, ymd, $("#chartCurrency").val());
       calculateSuprema();
@@ -168,6 +169,7 @@ function search(){
   });
 }
 
+// (이하 데이터 렌더링 및 엑셀 로직은 동일)
 function renderMainTable(ymd){
   $("#tbody").empty();
   CURRENCIES.forEach(c=>{
@@ -266,5 +268,4 @@ $(function(){
 </script>
 </body>
 </html>
-
 
