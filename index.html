@@ -21,38 +21,35 @@
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow: hidden; }
 
-/* 헤더 */
+/* 레이아웃 구성 */
 .header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); flex-shrink: 0; }
 .header img{ height:26px; }
 .header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
 
-/* 전체 컨테이너를 Flex로 설정하여 내부 요소 높이 제어 */
-.container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); box-sizing: border-box; }
-
+.container{ width:100%; padding:10px; display: flex; flex-direction: column; height: calc(100vh - 47px); }
 .top-nav{ display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-shrink: 0; }
 input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
 
-/* ✅ 핵심: 메인 그리드 영역이 남은 세로 공간을 모두 차지하도록 설정 */
-.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; align-items: stretch; }
+/* ✅ 메인 콘텐츠: 테이블과 그래프 높이 1:1 동기화 */
+.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; flex: 1; min-height: 0; margin-bottom: 10px; }
+.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; }
 
-/* 카드 높이를 부모(.main-content)에 맞춤 */
-.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); display:flex; flex-direction:column; overflow: hidden; height: 100%; }
-
-/* 테이블 영역 */
+/* 테이블 스타일 */
 .table-wrap{ flex: 1; overflow: auto; border-radius:10px; border:1px solid var(--border); }
 table{ width:100%; border-collapse:collapse; font-size: 13px; }
 th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); position: sticky; top: 0; z-index: 1; }
 td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
 
+/* 증감 표시 (화면용) */
 .rate-diff { font-size: 11px; margin-left: 4px; font-weight: 600; }
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* ✅ 그래프 영역이 카드의 남은 높이를 가득 채우도록 설정 */
-.chart-container { flex: 1; min-height: 0; position: relative; width: 100%; }
+/* ✅ 차트 영역: 가로줄 제거 및 그라데이션 */
+.chart-container { flex: 1; min-height: 0; position: relative; }
 
-/* 하단 섹션 */
+/* 하단 슈프리마 전용 섹션 */
 .footer-card { flex-shrink: 0; }
 .suprema-footer { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: center; }
 .suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 8px; }
@@ -76,7 +73,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       <span style="font-size:14px; font-weight:700;">조회일:</span>
       <input type="date" id="dateInput">
       <button id="btnSearch">조회</button>
-      <button id="btnExcel">엑셀 내려받기</button>
+      <button id="btnExcel" style="background:#A12A44;">엑셀 내려받기</button>
       <span id="subInfo" style="font-size:12px; color:var(--text-gray); margin-left: auto;"></span>
     </div>
 
@@ -100,7 +97,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       </div>
 
       <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:12px; flex-shrink: 0;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
           <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
           <select id="chartCurrency" style="font-size:12px;"></select>
         </div>
@@ -134,7 +131,6 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
   </div>
 
 <script>
-// (데이터 처리 및 차트 로직은 이전과 동일하게 유지하되 스타일 연동성 강화)
 const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -167,7 +163,7 @@ function search(){
       renderMainTable(ymd);
       updateChart(globalRows, ymd, $("#chartCurrency").val());
       calculateSuprema();
-      $("#subInfo").text("기준: " + d);
+      $("#subInfo").text("조회 기준일: " + d);
     }
   });
 }
@@ -188,6 +184,7 @@ function renderMainTable(ymd){
     const yavg = calcAvg(cRows, ymd.slice(0,4)+"0101", ymd);
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
+    
     $("#tbody").append(`<tr><td>${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
   });
 }
@@ -198,7 +195,7 @@ function updateChart(rows, ymd, label){
   const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
   
   const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, ctx.canvas.height);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
@@ -219,12 +216,13 @@ function updateChart(rows, ymd, label){
       plugins: { legend: { display: false } },
       scales: {
         x: { grid: { display: false }, ticks: { autoSkip: false, callback: (v, i) => showIndices.has(i) || i === dates.length-1 ? dates[i].slice(4,6)+"-"+dates[i].slice(6,8) : null } },
-        y: { grid: { display: false } }
+        y: { grid: { display: false } } // 가로줄 제거
       }
     }
   });
 }
 
+// ✅ 엑셀 다운로드: 증감 기호 없이 숫자만
 function downloadExcel(){
   const wb = XLSX.utils.book_new();
   const table = document.getElementById("mainTable");
@@ -269,4 +267,5 @@ $(function(){
 </script>
 </body>
 </html>
+
 
