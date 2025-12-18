@@ -59,7 +59,6 @@ body{
   white-space:nowrap;
 }
 
-/* ✅ 화면 가득차게: 최대폭 제한 제거 + 좌우 패딩 축소 */
 .container{
   width:100%;
   max-width:none;
@@ -72,6 +71,7 @@ body{
   border-radius:14px;
   padding:16px;
   box-shadow:var(--shadow);
+  margin-bottom: 14px;
 }
 
 /* 상단 컨트롤 */
@@ -116,15 +116,13 @@ button:hover{ background:var(--burgundy-dark); }
 .info{ font-size:13px; color:#555; margin-top:6px; }
 .error{ color:#d00; font-weight:700; margin-top:10px; }
 
-/* ✅ 2열 그리드 + 높이 늘리기 */
+/* 2열 그리드 */
 .grid{
   display:grid;
   grid-template-columns: 1.25fr 1fr;
   gap:16px;
-  margin-top:14px;
 }
 
-/* 너무 좁아지면 1열 */
 @media (max-width: 980px){
   .grid{ grid-template-columns: 1fr; }
 }
@@ -139,7 +137,7 @@ table{
   width:100%;
   border-collapse:collapse;
   background:#fff;
-  min-width:760px;
+  min-width:700px;
 }
 th{
   background:var(--burgundy-light);
@@ -180,26 +178,19 @@ select{
   white-space:nowrap;
 }
 .chart-box{
+  position: relative;
   border-radius:12px;
   background:#fff;
   border:1px solid #f0f0f0;
   padding:10px;
-}
-
-/* ✅ 오른쪽 카드도 화면에 꽉 차게: 그래프 높이 키움 */
-#rateChart{
-  width:100% !important;
-  height:430px !important;
-}
-@media (max-width:980px){
-  #rateChart{ height:340px !important; }
+  height: 430px; /* 높이 고정 */
 }
 </style>
 </head>
 
 <body>
   <div class="header">
-    <img src="Suprema_logo_basic.jpg" alt="Suprema Logo">
+    <img src="Suprema_logo_basic.jpg" alt="Logo">
     <div class="header-title">
       <div class="title">환율 조회</div>
       <div class="source">(한국은행 ECOS)</div>
@@ -207,7 +198,6 @@ select{
   </div>
 
   <div class="container">
-
     <div class="card">
       <div class="topbar">
         <div class="controls">
@@ -223,7 +213,6 @@ select{
     </div>
 
     <div class="grid">
-
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -245,7 +234,7 @@ select{
         <div class="chart-header">
           <div class="chart-title">환율 변동 추이 (최근 3개월)</div>
           <div>
-            <label style="white-space:nowrap;">통화:
+            <label>통화:
               <select id="chartCurrency"></select>
             </label>
           </div>
@@ -254,13 +243,11 @@ select{
           <canvas id="rateChart"></canvas>
         </div>
       </div>
-
     </div>
   </div>
 
 <script>
-const BACKEND =
-  "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
+const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
 
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -275,8 +262,7 @@ const CURRENCIES = [
 function formatNumber(x){
   if (x == null) return "-";
   const n = Number(x);
-  return isNaN(n) ? "-" :
-    n.toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  return isNaN(n) ? "-" : n.toLocaleString("ko-KR",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function parseNumber(x){
   const n = Number(String(x).replace(/,/g,""));
@@ -304,6 +290,7 @@ function calcAverage(rows, key, start, end){
   if (!vals.length) return null;
   return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
+
 function getRateOnDate(rows, key, ymd){
   let v = null;
   rows.forEach(r=>{
@@ -314,19 +301,14 @@ function getRateOnDate(rows, key, ymd){
   return v;
 }
 
-/* ✅ 월말 라벨만 표시하기 위한 helper
-   - dates(YYYYMMDD 정렬된 배열)를 받아
-   - 각 달(YYYYMM)별로 "그 달에 존재하는 마지막 날짜 index"만 true로 표시
-*/
 function buildMonthEndIndexSet(dates){
   const lastIndexByMonth = {};
   for (let i=0; i<dates.length; i++){
     const ymd = dates[i];
     const ym = ymd.slice(0,6);
-    lastIndexByMonth[ym] = i; // 계속 덮어써서 마지막 index가 남음
+    lastIndexByMonth[ym] = i;
   }
-  const set = new Set(Object.values(lastIndexByMonth));
-  return set;
+  return new Set(Object.values(lastIndexByMonth));
 }
 
 function updateChart(rows, queryYmd, label){
@@ -346,48 +328,47 @@ function updateChart(rows, queryYmd, label){
     if (v != null && !(t in map)) map[t] = v;
   });
 
-  const dates = Object.keys(map).sort();              // ["20250901", ...]
+  const dates = Object.keys(map).sort();
   const labels = dates.map(d=>`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}`);
   const values = dates.map(d=>map[d]);
-
   const monthEndIdx = buildMonthEndIndexSet(dates);
 
   const ctx = document.getElementById("rateChart").getContext("2d");
   if (window._chartObj) window._chartObj.destroy();
 
-  window._chartObj = new Chart(ctx,{
-    type:"line",
-    data:{
-      labels,
-      datasets:[{
+  window._chartObj = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
         data: values,
-        borderColor:"#78787A",
-        borderWidth:2,
-        pointRadius:0,
-        fill:false,
-        tension:0.2
+        borderColor: "#78787A",
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0.2
       }]
     },
-  options:{
-  plugins:{ legend:{ display:false } },
-  scales:{
-    x:{
-      grid:{ display:false, drawBorder:true },   // ✅ 세로 그리드 제거 + 축선 유지
-      ticks:{
-        maxRotation:0,
-        minRotation:0,
-        autoSkip:false,
-        callback: function(value, index){
-          return monthEndIdx.has(index) ? this.getLabelForValue(value) : "";
-        }
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            maxRotation: 0,
+            autoSkip: false,
+            callback: function(value, index) {
+              return monthEndIdx.has(index) ? this.getLabelForValue(value) : "";
+            }
+          }
+        },
+        y: { grid: { display: false } }
       }
-    },
-    y:{
-      grid:{ display:false, drawBorder:true }    // ✅ 가로 그리드 제거 + 축선 유지
     }
-  }
+  });
 }
-
 
 function search(){
   $("#msg").removeClass("error").text("조회중...");
@@ -407,9 +388,9 @@ function search(){
   const url = `${BACKEND}?start=${minStart}&end=${ymd}&callback=?`;
 
   $.ajax({
-    url,
-    dataType:"jsonp",
-    success:function(data){
+    url: url,
+    dataType: "jsonp",
+    success: function(data){
       $("#msg").text("");
       const rows = data?.StatisticSearch?.row || [];
       window._lastRows = rows;
@@ -439,7 +420,7 @@ function search(){
       $("#subInfo").text(`조회 기준일: ${d}`);
       updateChart(rows, ymd, $("#chartCurrency").val());
     },
-    error:function(){
+    error: function(){
       $("#msg").addClass("error").text("데이터 로드 실패(JSONP).");
     }
   });
@@ -463,10 +444,7 @@ function downloadExcel(){
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
-
-  ws["!cols"] = [
-    { wch: 22 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 22 }
-  ];
+  ws["!cols"] = [{ wch: 22 }, { wch: 18 }, { wch: 22 }, { wch: 18 }, { wch: 22 }];
 
   XLSX.utils.book_append_sheet(wb, ws, "환율");
   const filename = `환율조회_${$("#dateInput").val() || "today"}.xlsx`;
@@ -490,10 +468,8 @@ $(function(){
     updateChart(window._lastRows, d, $(this).val());
   });
 
-  search(); // 첫 화면 자동 조회
+  search();
 });
 </script>
 </body>
 </html>
-
-
