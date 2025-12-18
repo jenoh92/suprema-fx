@@ -11,49 +11,54 @@
 <style>
 :root{
   --burgundy:#A12A44;
-  --burgundy-dark:#8B233A;
   --burgundy-light:#F4E6EA;
   --bg:#f7f7f7;
   --card:#ffffff;
   --border:#e0e0e0;
-  --text-gray:#666;
 }
 *{ box-sizing:border-box; }
 body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; }
 
-.header{ display:flex; align-items:center; gap:12px; padding:10px 24px; background:#fff; border-bottom:1px solid var(--border); }
-.header img{ height:26px; }
-.header-title .title{ font-size:18px; font-weight:800; color:var(--burgundy); }
+/* 헤더 크기 확대 */
+.header{ display:flex; align-items:center; gap:15px; padding:15px 30px; background:#fff; border-bottom:1px solid var(--border); }
+.header img{ height:32px; }
+.header-title .title{ font-size:22px; font-weight:800; color:var(--burgundy); }
 
-.container{ width:100%; padding:15px; display: flex; flex-direction: column; gap: 12px; max-width: 1600px; margin: 0 auto; }
-.top-nav{ display:flex; align-items:center; gap:10px; flex-shrink: 0; }
-input[type="date"], select { padding:5px 8px; border-radius:6px; border:1px solid #ccc; font-size:14px; outline: none; }
-button{ background:var(--burgundy); color:#fff; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px; }
+/* 전체 컨테이너 너비 확대 */
+.container{ width:98%; margin: 0 auto; padding:20px 0; display: flex; flex-direction: column; gap: 20px; }
 
-.main-content{ display:grid; grid-template-columns: 1.2fr 1fr; gap:15px; align-items: start; }
-.card{ background:var(--card); border-radius:12px; padding:15px; box-shadow:0 2px 8px rgba(0,0,0,0.05); border:1px solid var(--border); }
+/* 상단 컨트롤바 */
+.top-nav{ display:flex; align-items:center; gap:15px; padding: 0 10px; }
+input[type="date"], select { padding:8px 12px; border-radius:6px; border:1px solid #ccc; font-size:16px; outline: none; }
+button{ background:var(--burgundy); color:#fff; border:none; padding:10px 24px; border-radius:6px; cursor:pointer; font-weight:600; font-size:16px; }
 
-.table-wrap{ border-radius:10px; border:1px solid var(--border); overflow: hidden; }
-table{ width:100%; border-collapse:collapse; font-size: 13px; }
-th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px; border-bottom:2px solid var(--border); }
-td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
+/* 메인 그리드: 화면을 꽉 채우도록 비율 조정 */
+.main-content{ display:grid; grid-template-columns: 1.1fr 1fr; gap:20px; align-items: start; }
+.card{ background:var(--card); border-radius:15px; padding:25px; box-shadow:0 4px 12px rgba(0,0,0,0.08); border:1px solid var(--border); }
 
-.rate-diff { font-size: 11px; margin-left: 4px; font-weight: 600; }
+/* 테이블 스타일: 폰트 키우고 여백 최적화 */
+.table-wrap{ border-radius:12px; border:1px solid var(--border); overflow: hidden; }
+table{ width:100%; border-collapse:collapse; font-size: 15px; }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:15px 10px; border-bottom:2px solid var(--border); font-size: 16px; }
+td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center; }
+
+.rate-diff { font-size: 12px; margin-left: 5px; font-weight: 700; }
 .up { color: #d60000; }
 .down { color: #0056b3; }
 
-/* 그래프 높이 고정 (테이블과 균형) */
-.chart-card { display: flex; flex-direction: column; height: 100%; min-height: 380px; }
-.chart-container { flex: 1; position: relative; min-height: 300px; padding-top: 10px; }
+/* 그래프 영역: 테이블 높이에 맞춰 시원하게 확대 */
+.chart-card { display: flex; flex-direction: column; min-height: 450px; }
+.chart-container { flex: 1; position: relative; padding-top: 15px; }
 
-.suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 20px; align-items: center; }
-.suprema-calc-box { display: flex; gap: 8px; align-items: center; background: #f9f9f9; padding: 12px; border-radius: 8px; }
-.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid var(--burgundy-light); }
-.res-item { text-align: center; }
-.res-label { font-size: 13px; font-weight: 700; color: #666; display: block; margin-bottom: 4px; }
-.res-val { font-size: 22px; font-weight: 800; color: #333; }
+/* 하단 계산기 영역 확대 */
+.suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; }
+.suprema-calc-box { display: flex; gap: 12px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 12px; }
+.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 25px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
+.res-item { text-align: center; flex: 1; }
+.res-label { font-size: 15px; font-weight: 700; color: #666; display: block; margin-bottom: 8px; }
+.res-val { font-size: 32px; font-weight: 900; color: #333; }
 
-.loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; }
+.loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; font-weight: bold; }
 </style>
 </head>
 
@@ -65,21 +70,21 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
   <div class="container">
     <div class="top-nav">
-      <span style="font-size:14px; font-weight:700;">조회일:</span>
+      <span style="font-size:16px; font-weight:700;">조회일:</span>
       <input type="date" id="dateInput">
       <button id="btnSearch">조회</button>
-      <button id="btnExcel" style="background:#A12A44;">엑셀 내려받기</button>
-      <span id="subInfo" style="font-size:12px; color:var(--text-gray); margin-left: auto;"></span>
+      <button id="btnExcel" style="background:#8B233A;">엑셀 내려받기</button>
+      <span id="subInfo" style="font-size:14px; color:#666; margin-left: auto;"></span>
     </div>
 
     <div class="main-content">
       <div class="card" style="position:relative; padding:0; overflow:hidden;">
-        <div id="tableLoading" class="loading-overlay">로딩중...</div>
+        <div id="tableLoading" class="loading-overlay">데이터 로딩 중...</div>
         <div class="table-wrap" style="border:none; border-radius:0;">
           <table id="mainTable">
             <thead>
               <tr>
-                <th style="text-align:left; padding-left:15px;">통화</th>
+                <th style="text-align:left; padding-left:25px;">통화</th>
                 <th>조회일 환율 (원)</th>
                 <th>연초 평균</th>
                 <th>전월 평균</th>
@@ -93,8 +98,8 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
       <div class="card chart-card">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="font-size:14px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
-          <select id="chartCurrency" style="font-size:12px;"></select>
+          <div style="font-size:17px; font-weight:800; color:var(--burgundy);">환율 변동 추이 (최근 3개월)</div>
+          <select id="chartCurrency" style="font-size:14px;"></select>
         </div>
         <div class="chart-container">
           <canvas id="rateChart"></canvas>
@@ -102,8 +107,8 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       </div>
     </div>
 
-    <div class="card">
-      <div style="font-size: 15px; font-weight: 900; color: var(--burgundy); margin-bottom: 10px;">※ 슈프리마 적용환율 상세 (USD)</div>
+    <div class="card" style="padding: 20px 30px;">
+      <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px;">※ 슈프리마 적용환율 상세 (USD)</div>
       <div class="suprema-footer">
         <div class="suprema-calc-box">
           <select id="selYear"></select>
@@ -115,7 +120,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
             <span class="res-label">최종 원가 (MAX)</span>
             <span id="resWonka" class="res-val">-</span>
           </div>
-          <div style="width: 1px; background: #eee; margin: 0 20px;"></div>
+          <div style="width: 2px; background: #eee; margin: 0 40px;"></div>
           <div class="res-item">
             <span class="res-label">최종 판가 (-50원)</span>
             <span id="resPanka" class="res-val">-</span>
@@ -180,7 +185,7 @@ function renderMainTable(ymd){
     const pavg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-2, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     const m3avg = calcAvg(cRows, toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-4, 1)), toYmd(new Date(ymd.slice(0,4), ymd.slice(4,6)-1, 0)));
     
-    $("#tbody").append(`<tr><td style="text-align:left; padding-left:15px; font-weight:600;">${c.label}</td><td><strong>${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
+    $("#tbody").append(`<tr><td style="text-align:left; padding-left:25px; font-weight:700;">${c.label}</td><td><strong style="font-size:17px;">${fNum(curr)}</strong>${diffHtml}</td><td>${fNum(yavg)}</td><td>${fNum(pavg)}</td><td>${fNum(m3avg)}</td></tr>`);
   });
 }
 
@@ -190,16 +195,14 @@ function updateChart(rows, ymd, label){
   const cRows = rows.filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd).sort((a,b)=>a.TIME.localeCompare(b.TIME));
   
   const ctx = document.getElementById("rateChart").getContext("2d");
-  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+  const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
 
-  // ✅ 날짜 필터링 로직: 말일(또는 데이터상 해당 월의 마지막 날)만 표시
   const dates = cRows.map(r=>r.TIME);
   const monthEnds = {};
   dates.forEach((d, i) => {
-    const yyyymm = d.slice(0,6);
-    monthEnds[yyyymm] = i; // 마지막 인덱스가 해당 월의 말일 데이터가 됨
+    monthEnds[d.slice(0,6)] = i; 
   });
   const showIndices = new Set(Object.values(monthEnds));
 
@@ -208,7 +211,7 @@ function updateChart(rows, ymd, label){
     type: "line",
     data: {
       labels: dates,
-      datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
+      datasets: [{ data: cRows.map(r=>pNum(r.DATA_VALUE)), borderColor: "#A12A44", borderWidth: 3, pointRadius: 0, fill: true, backgroundColor: gradient, tension: 0.2 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
@@ -218,13 +221,16 @@ function updateChart(rows, ymd, label){
           grid: { display: false },
           ticks: { 
             autoSkip: false,
-            // ✅ 요청 사항 반영: 말일자 인덱스만 날짜 텍스트를 반환
+            font: { size: 13, weight: 'bold' },
             callback: function(val, index) {
               return showIndices.has(index) ? dates[index].slice(4,6) + "-" + dates[index].slice(6,8) : "";
             }
           }
         },
-        y: { grid: { display: false } }
+        y: { 
+          grid: { color: '#f0f0f0' },
+          ticks: { font: { size: 13 } }
+        }
       }
     }
   });
@@ -274,4 +280,3 @@ $(function(){
 </script>
 </body>
 </html>
-
