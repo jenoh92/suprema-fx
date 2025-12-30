@@ -48,10 +48,22 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
 .suprema-calc-box { display: flex; gap: 12px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 12px; }
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 25px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
 .res-item { text-align: center; flex: 1; }
-.res-label { font-size: 15px; font-weight: 700; color: #666; display: block; margin-bottom: 8px; }
+.res-label { font-size: 15px; font-weight: 800; color: #666; display: block; margin-bottom: 8px; line-height: 1.2; }
 .res-val { font-size: 32px; font-weight: 900; color: #333; }
 
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; font-weight: bold; }
+
+/* ✅ 슈프리마 누적 테이블: 스크롤 + 헤더 고정 */
+.suprema-scroll{
+  max-height: 260px;
+  overflow-y: auto;
+  border-radius: 12px;
+}
+.suprema-scroll thead th{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
 </style>
 </head>
 
@@ -71,7 +83,7 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
       <span id="subInfo" style="font-size:14px; color:#666; margin-left: auto;"></span>
     </div>
 
-    <!-- ✅ 슈프리마 적용환율 상세: 위로 -->
+    <!-- ✅ 슈프리마 적용환율 상세 -->
     <div class="card" style="padding: 20px 30px;">
       <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px;">※ 슈프리마 적용환율 상세 (USD)</div>
 
@@ -84,32 +96,54 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
 
         <div class="res-card">
           <div class="res-item">
-            <span class="res-label">최종 원가 (MAX)</span>
+            <span class="res-label">
+              최종 원가 MAX<br>
+              <span style="font-size:12px; font-weight:500; color:#888;">
+                (전월 평균, 직전 3개월 평균)
+              </span>
+            </span>
             <span id="resWonka" class="res-val">-</span>
           </div>
+
           <div style="width: 2px; background: #eee; margin: 0 40px;"></div>
+
           <div class="res-item">
-            <span class="res-label">최종 판가 (-50원)</span>
+            <span class="res-label">
+              최종 판가<br>
+              <span style="font-size:12px; font-weight:500; color:#888;">
+                (최종 원가 -50원)
+              </span>
+            </span>
             <span id="resPanka" class="res-val">-</span>
           </div>
         </div>
       </div>
 
-      <!-- ✅ 1월~선택월 누적 리스트 (최근월이 위) -->
+      <!-- ✅ 7월~선택월 누적 리스트 (최근월이 위) -->
       <div style="margin-top:18px;">
-        <div style="font-size:14px; font-weight:800; color:#666; margin-bottom:10px;">
-          1월 ~ 선택월 적용환율 (최근월이 위)
+        <div id="supremaTitle" style="font-size:14px; font-weight:800; color:#666; margin-bottom:10px;">
+          7월 ~ 선택월 적용환율 (최근월이 위)
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap suprema-scroll">
           <table id="supremaTable">
             <thead>
               <tr>
                 <th style="width:90px;">월</th>
                 <th>전월 평균</th>
                 <th>직전 3개월 평균</th>
-                <th>최종 원가 (MAX)</th>
-                <th>최종 판가 (-50원)</th>
+                <th>
+                  최종 원가 MAX<br>
+                  <span style="font-size:12px; font-weight:500;">
+                    (전월 평균, 직전 3개월 평균)
+                  </span>
+                </th>
+                <th>
+                  최종 판가<br>
+                  <span style="font-size:12px; font-weight:500;">
+                    (최종 원가 -50원)
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody id="supremaTbody"></tbody>
@@ -170,7 +204,6 @@ function ymdToHyphen(ymd){
   return `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
 }
 
-// ✅ 정렬된 cRows에서 (target <= TIME)인 마지막 인덱스 찾기 (이진탐색)
 function findLastIndexLE(cRowsSorted, targetYmd){
   let lo = 0, hi = cRowsSorted.length - 1, ans = -1;
   while(lo <= hi){
@@ -184,7 +217,6 @@ function findLastIndexLE(cRowsSorted, targetYmd){
   return ans;
 }
 
-// ✅ 기간 평균: s~e 사이 데이터만 평균 (데이터 존재일만)
 function calcAvg(cRowsSorted, s, e){
   const v = cRowsSorted
     .filter(r=>r.TIME >= s && r.TIME <= e)
@@ -193,13 +225,11 @@ function calcAvg(cRowsSorted, s, e){
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
 }
 
-// ✅ s~e 구간에서 첫 데이터 TIME (없으면 null)
 function getFirstTimeInRange(cRowsSorted, s, e){
   const r = cRowsSorted.find(x => x.TIME >= s && x.TIME <= e);
   return r ? r.TIME : null;
 }
 
-// ✅ 연초 시작일 보정(메인테이블용): 1/2~endTime 사이 첫 데이터일부터 평균
 function getYearStartAdjusted(cRowsSorted, year, endTime){
   const base = year + "0102";
   const first = getFirstTimeInRange(cRowsSorted, base, endTime);
@@ -207,46 +237,46 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
 }
 
 /* =========================
-   ✅ 슈프리마: 1월~선택월 누적 계산
-   - 최근 월이 위로 오도록 reverse()
-   - 1~3월은 3개월평균이 없으니 "전월평균"만으로 wonka 계산(원치 않으면 아래 로직에서 제거 가능)
+   ✅ 슈프리마: 7월~선택월만 표시 (최근 월이 위)
 ========================= */
-function buildSupremaCumulative(year, uptoMonth){
+function buildSupremaCumulative(year, uptoMonth, startMonth=7){
   const usdRows = globalRows
     .filter(r=>r.ITEM_NAME1.includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const list = [];
+  if(uptoMonth < startMonth) return list;
 
-  for(let m=1; m<=uptoMonth; m++){
+  for(let m=startMonth; m<=uptoMonth; m++){
     const prevMonthStart = toYmd(new Date(year, m-2, 1)); // (m-1)월 1일
     const prevMonthEnd   = toYmd(new Date(year, m-1, 0)); // (m-1)월 말일
 
     const m3Start = toYmd(new Date(year, m-4, 1)); // (m-3)월 1일
     const m3End   = prevMonthEnd;                  // (m-1)월 말일
 
-    const pavg = (m >= 2) ? calcAvg(usdRows, prevMonthStart, prevMonthEnd) : null;
-    const m3avg = (m >= 4) ? calcAvg(usdRows, m3Start, m3End) : null;
+    const pavg = calcAvg(usdRows, prevMonthStart, prevMonthEnd);
+    const m3avg = calcAvg(usdRows, m3Start, m3End);
 
     let wonka = null, panka = null;
-
     if(pavg != null && m3avg != null){
       wonka = Math.max(pavg, m3avg);
-      panka = wonka - 50;
-    } else if(pavg != null && m3avg == null){
-      // ✅ 1~3월: 3개월 평균이 없으면 전월평균만으로 표시 (원치 않으면 이 블록 삭제)
-      wonka = pavg;
       panka = wonka - 50;
     }
 
     list.push({ month: m, pavg, m3avg, wonka, panka });
   }
 
-  return list.reverse(); // ✅ 최근 월이 위
+  return list.reverse();
 }
 
 function renderSupremaTable(list){
   $("#supremaTbody").empty();
+
+  if(!list.length){
+    $("#supremaTbody").append(`<tr><td colspan="5" style="padding:18px; color:#777;">표시할 데이터가 없습니다. (선택월이 7월 이상인지 확인)</td></tr>`);
+    return;
+  }
+
   list.forEach(r=>{
     $("#supremaTbody").append(`
       <tr>
@@ -260,12 +290,10 @@ function renderSupremaTable(list){
   });
 }
 
-// ✅ 캐시 + 조회
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
 
-  // ✅ 백엔드 요청은 1/2부터
   const yearStartForFetch = ymd.slice(0,4) + "0102";
   const cacheKey = `rate_data_${yearStartForFetch}_${ymd}`;
 
@@ -301,8 +329,6 @@ function processResult(ymd, d) {
   renderMainTable(ymd);
   updateChart(globalRows, ymd, $("#chartCurrency").val());
   calculateSuprema();
-
-  // ✅ 표 안에는 날짜 멘트 없이, 상단에서만 안내
   $("#subInfo").text("조회 기준일: " + d + " (데이터 없으면 직전 영업일 자동 적용)");
 }
 
@@ -319,12 +345,10 @@ function renderMainTable(ymd){
       return;
     }
 
-    // ✅ 조회일이 주말/휴일이면 직전 데이터 사용
     const idx = findLastIndexLE(cRows, ymd);
     const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
     const currTime = idx !== -1 ? cRows[idx].TIME : null;
 
-    // ✅ 전일 대비: 직전 데이터(직전 영업일)
     const prev = (idx > 0) ? pNum(cRows[idx-1].DATA_VALUE) : null;
 
     let diffHtml = "";
@@ -335,24 +359,21 @@ function renderMainTable(ymd){
         diff < 0 ? `<span class="rate-diff down">▼${fNum(Math.abs(diff))}</span>` : "";
     }
 
-    // ✅ 연초 평균: 1/2~endTime 구간의 “첫 데이터일”부터 평균
     const year = ymd.slice(0,4);
     const yearStartAdj = (currTime ? getYearStartAdjusted(cRows, year, currTime) : null);
     const yavg = (currTime && yearStartAdj) ? calcAvg(cRows, yearStartAdj, currTime) : null;
 
-    // ✅ 전월 평균: 전월 1일~말일
     const y = parseInt(ymd.slice(0,4),10);
     const m = parseInt(ymd.slice(4,6),10);
+
     const prevMonthStart = toYmd(new Date(y, m-2, 1));
     const prevMonthEnd   = toYmd(new Date(y, m-1, 0));
     const pavg = calcAvg(cRows, prevMonthStart, prevMonthEnd);
 
-    // ✅ 직전 3개월 평균: (3개월 전 1일) ~ (전월 말일)
     const m3Start = toYmd(new Date(y, m-4, 1));
     const m3End   = prevMonthEnd;
     const m3avg = calcAvg(cRows, m3Start, m3End);
 
-    // ✅ (요청사항) 조회일 환율 아래 작은 멘트 제거 유지
     const yearAvgNote = (currTime && yearStartAdj && yearStartAdj !== (year+"0102"))
       ? `<div style="font-size:11px;color:#888;margin-top:4px;">(연초기준: ${ymdToHyphen(yearStartAdj)}~)</div>`
       : "";
@@ -446,15 +467,15 @@ function downloadExcel(){
 }
 
 /* =========================
-   ✅ 슈프리마 계산(누적 + 최신값 요약)
-   - 1월~선택월 누적 테이블 표시
-   - 요약 숫자는 최근월(가장 위 행) 값
+   ✅ 슈프리마 계산(7월~선택월 + 최신값 요약)
 ========================= */
 function calculateSuprema(){
   const year = parseInt($("#selYear").val(),10);
   const month = parseInt($("#selMonth").val(),10);
 
-  const list = buildSupremaCumulative(year, month);
+  $("#supremaTitle").text(`7월 ~ ${month}월 적용환율 (최근월이 위)`);
+
+  const list = buildSupremaCumulative(year, month, 7);
   renderSupremaTable(list);
 
   const latest = list[0];
@@ -492,4 +513,6 @@ $(function(){
 </script>
 </body>
 </html>
+
+
 
