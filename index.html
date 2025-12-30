@@ -71,6 +71,29 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
       <span id="subInfo" style="font-size:14px; color:#666; margin-left: auto;"></span>
     </div>
 
+    <!-- ✅ 슈프리마 적용환율 상세: 위로 이동 -->
+    <div class="card" style="padding: 20px 30px;">
+      <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px;">※ 슈프리마 적용환율 상세 (USD)</div>
+      <div class="suprema-footer">
+        <div class="suprema-calc-box">
+          <select id="selYear"></select>
+          <select id="selMonth"></select>
+          <button id="btnCalc">계산하기</button>
+        </div>
+        <div class="res-card">
+          <div class="res-item">
+            <span class="res-label">최종 원가 (MAX)</span>
+            <span id="resWonka" class="res-val">-</span>
+          </div>
+          <div style="width: 2px; background: #eee; margin: 0 40px;"></div>
+          <div class="res-item">
+            <span class="res-label">최종 판가 (-50원)</span>
+            <span id="resPanka" class="res-val">-</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="main-content">
       <div class="card" style="position:relative; padding:0; overflow:hidden;">
         <div id="tableLoading" class="loading-overlay">데이터 로딩 중...</div>
@@ -97,28 +120,6 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
         </div>
         <div class="chart-container">
           <canvas id="rateChart"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" style="padding: 20px 30px;">
-      <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px;">※ 슈프리마 적용환율 상세 (USD)</div>
-      <div class="suprema-footer">
-        <div class="suprema-calc-box">
-          <select id="selYear"></select>
-          <select id="selMonth"></select>
-          <button id="btnCalc">계산하기</button>
-        </div>
-        <div class="res-card">
-          <div class="res-item">
-            <span class="res-label">최종 원가 (MAX)</span>
-            <span id="resWonka" class="res-val">-</span>
-          </div>
-          <div style="width: 2px; background: #eee; margin: 0 40px;"></div>
-          <div class="res-item">
-            <span class="res-label">최종 판가 (-50원)</span>
-            <span id="resPanka" class="res-val">-</span>
-          </div>
         </div>
       </div>
     </div>
@@ -187,9 +188,8 @@ function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
 
-  // ✅ 백엔드 요청은 1/2부터 (없으면 그냥 빈 구간으로 처리되며 프론트가 안전하게 평균 처리)
+  // ✅ 백엔드 요청은 1/2부터
   const yearStartForFetch = ymd.slice(0,4) + "0102";
-
   const cacheKey = `rate_data_${yearStartForFetch}_${ymd}`;
 
   const cachedData = sessionStorage.getItem(cacheKey);
@@ -225,6 +225,7 @@ function processResult(ymd, d) {
   updateChart(globalRows, ymd, $("#chartCurrency").val());
   calculateSuprema();
 
+  // ✅ 표 안에는 '직전 영업일(작은 멘트)'를 안 보여주고, 상단에서만 안내
   $("#subInfo").text("조회 기준일: " + d + " (데이터 없으면 직전 영업일 자동 적용)");
 }
 
@@ -274,11 +275,8 @@ function renderMainTable(ymd){
     const m3End   = prevMonthEnd;
     const m3avg = calcAvg(cRows, m3Start, m3End);
 
-    // ✅ 안내 표시
-    const dateNote = (currTime && currTime !== ymd)
-      ? `<div style="font-size:11px;color:#888;margin-top:4px;">(${ymdToHyphen(currTime)} 기준)</div>`
-      : "";
-
+    // ✅ (요청사항) 조회일 환율 아래에 작게 뜨는 "(xxxx-xx-xx 기준)" 멘트 제거
+    // ✅ 연초 보정 안내는 필요하면 유지 (원치 않으면 yearAvgNote도 지워도 됨)
     const yearAvgNote = (currTime && yearStartAdj && yearStartAdj !== (year+"0102"))
       ? `<div style="font-size:11px;color:#888;margin-top:4px;">(연초기준: ${ymdToHyphen(yearStartAdj)}~)</div>`
       : "";
@@ -289,7 +287,6 @@ function renderMainTable(ymd){
         <td>
           <strong style="font-size:17px;">${fNum(curr)}</strong>
           ${diffHtml}
-          ${dateNote}
         </td>
         <td>
           ${fNum(yavg)}
@@ -426,4 +423,5 @@ $(function(){
 </script>
 </body>
 </html>
+
 
