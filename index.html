@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>슈프리마 환율 통합 관리 시스템</title>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -17,24 +18,24 @@
   --border:#e0e0e0;
 }
 *{ box-sizing:border-box; }
-body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y: auto; }
+body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; color:#333; overflow-y:auto; }
 
 .header{ display:flex; align-items:center; gap:15px; padding:14px 26px; background:#fff; border-bottom:1px solid var(--border); }
 .header img{ height:30px; }
 .header-title .title{ font-size:20px; font-weight:900; color:var(--burgundy); }
 
-.container{ width:98%; margin: 0 auto; padding:16px 0 22px; display: flex; flex-direction: column; gap: 14px; }
+.container{ width:98%; margin:0 auto; padding:16px 0 22px; display:flex; flex-direction:column; gap:14px; }
 
-.top-nav{ display:flex; align-items:center; gap:12px; padding: 0 10px; }
-input[type="date"], select { padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:15px; outline: none; }
+.top-nav{ display:flex; align-items:center; gap:12px; padding:0 10px; }
+input[type="date"], select { padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:15px; outline:none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:9px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:15px; }
 button:disabled{ opacity:0.6; cursor:not-allowed; }
 
 .card{ background:var(--card); border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.08); border:1px solid var(--border); }
 
-.table-wrap{ border-radius:12px; border:1px solid var(--border); overflow: hidden; background:#fff; }
-table{ width:100%; border-collapse:collapse; font-size: 13px; }
-th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px 8px; border-bottom:2px solid var(--border); font-size: 13px; text-align: center; }
+.table-wrap{ border-radius:12px; border:1px solid var(--border); overflow:hidden; background:#fff; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th{ background:var(--burgundy-light); color:var(--burgundy); padding:10px 8px; border-bottom:2px solid var(--border); font-size:13px; text-align:center; }
 td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; }
 
 .two-col{
@@ -42,69 +43,63 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
   grid-template-columns: 1.05fr 0.95fr;
   gap:14px;
   align-items:center;
-  /* ✅ 왼쪽(슈프리마) 카드 높이 늘려서 오른쪽과 하단 맞추기 */
+}
+
+/* ✅ (중요) two-col 밖으로 빼야 함 + calc 오타 수정 */
 .suprema-left{
-  min-height: cal(100vh - 170px); /* 740~820 사이로 화면에 맞게 미세조정 */
+  min-height: calc(100vh - 170px);
 }
 
-}
-
-.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 14px 14px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
-.res-item { text-align: center; flex: 1; }
-.res-label { font-size: 14px; font-weight: 900; color: #444; display: block; margin-bottom: 4px; line-height: 1.2; }
-.res-val { font-size: 28px; font-weight: 900; color: #333; }
+.res-card { display:flex; justify-content:space-around; background:#fdfdfd; padding:14px; border-radius:12px; border:1px solid var(--burgundy-light); }
+.res-item { text-align:center; flex:1; }
+.res-label { font-size:14px; font-weight:900; color:#444; display:block; margin-bottom:4px; line-height:1.2; }
+.res-val { font-size:28px; font-weight:900; color:#333; }
 
 .table-footnote{
-  margin-top: 8px;
-  font-size: 11px;
-  font-weight: 800;
-  color: #777;
-  line-height: 1.5;
+  margin-top:8px;
+  font-size:11px;
+  font-weight:800;
+  color:#777;
+  line-height:1.5;
 }
 .table-footnote .dot{
-  color: var(--burgundy);
-  font-weight: 900;
-  margin-right: 6px;
+  color:var(--burgundy);
+  font-weight:900;
+  margin-right:6px;
 }
 
 .kpi-row{
   display:grid;
   grid-template-columns: 1fr 1fr;
   gap:10px;
-  margin-bottom: 12px;
+  margin-bottom:12px;
 }
 .kpi{
   border:1px solid var(--border);
   border-radius:12px;
-  padding:12px 12px;
+  padding:12px;
   background:#fff;
 }
 .kpi .lab{
   font-size:12px;
   font-weight:900;
   color:#666;
-  margin-bottom: 6px;
+  margin-bottom:6px;
 }
 .kpi .val{
   font-size:20px;
   font-weight:900;
   color:#222;
 }
-.kpi .sub{
-  font-size:11px;
-  font-weight:800;
-  color:#888;
-  margin-top: 4px;
-}
 
-.chart-card { display: flex; flex-direction: column; min-height: 420px; }
-.chart-container { flex: 1; position: relative; padding-top: 10px; }
+.chart-card { display:flex; flex-direction:column; min-height:420px; }
+.chart-container { flex:1; position:relative; padding-top:10px; }
 
 .section-title{
   font-size:16px;
   font-weight:900;
   color:var(--burgundy);
-  margin-bottom: 10px;
+  margin-bottom:10px;
 }
 
 /* ✅ 로딩 오버레이 */
@@ -155,7 +150,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
   <div class="header">
     <img src="Suprema_logo_basic.jpg" alt="Logo">
     <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
-    <div style="margin-left: auto; font-size: 12px; color: #888; font-weight: 600;">출처: 한국은행 경제통계시스템 (ECOS)</div>
+    <div style="margin-left:auto; font-size:12px; color:#888; font-weight:600;">출처: 한국은행 경제통계시스템 (ECOS)</div>
   </div>
 
   <div class="container">
@@ -164,12 +159,11 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       <input type="date" id="dateInput">
       <button id="btnSearch">조회</button>
       <button id="btnExcel" style="background:#8B233A;">엑셀 내려받기</button>
-      <span id="subInfo" style="font-size:13px; color:#666; margin-left: auto; font-weight:700;"></span>
+      <span id="subInfo" style="font-size:13px; color:#666; margin-left:auto; font-weight:700;"></span>
     </div>
 
     <div class="two-col">
-
-      <div class="card suprema-left" style="padding: 16px;">
+      <div class="card suprema-left" style="padding:16px;">
         <div class="section-title">※ 슈프리마 적용환율 상세 (USD)</div>
 
         <div class="res-card">
@@ -178,7 +172,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
             <span id="resWonka" class="res-val">-</span>
           </div>
 
-          <div style="width: 2px; background: #eee; margin: 0 22px;"></div>
+          <div style="width:2px; background:#eee; margin:0 22px;"></div>
 
           <div class="res-item">
             <span class="res-label">판가</span>
@@ -186,9 +180,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
           </div>
         </div>
 
-        <div style="margin-top: 12px;">
-          <!-- ✅ 노란색 부분(제목) 제거: 아예 표시하지 않음 -->
-
+        <div style="margin-top:12px;">
           <div class="table-wrap">
             <table id="supremaTable">
               <thead>
@@ -211,7 +203,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
         </div>
       </div>
 
-      <div class="card" style="padding: 16px;">
+      <div class="card" style="padding:16px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
           <div class="section-title" style="margin-bottom:0;">선택 통화 요약</div>
           <select id="chartCurrency" style="font-size:14px;"></select>
@@ -221,33 +213,28 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
           <div class="kpi">
             <div class="lab">조회일 환율</div>
             <div class="val" id="kpiCurr">-</div>
-          
           </div>
           <div class="kpi">
-            <div class="lab">당해년도 평균 </div>
+            <div class="lab">당해년도 평균</div>
             <div class="val" id="kpiYavg">-</div>
-          
           </div>
           <div class="kpi">
             <div class="lab">전월 평균</div>
             <div class="val" id="kpiPavg">-</div>
-           
           </div>
           <div class="kpi">
             <div class="lab">직전 3개월 평균(당월 제외)</div>
             <div class="val" id="kpiM3avg">-</div>
-           
           </div>
         </div>
 
-        <div class="chart-card" style="margin-top: 8px;">
+        <div class="chart-card" style="margin-top:8px;">
           <div style="font-size:14px; font-weight:900; color:#666;">환율 변동 추이 (최근 3개월)</div>
           <div class="chart-container">
             <canvas id="rateChart"></canvas>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -376,7 +363,7 @@ function buildSupremaFrom202504(baseYear, baseMonth){
     list.push({ ym, ymLabel: ymToLabel(ym), pavg, m3avg, wonka, panka });
   });
 
-  return list.reverse();
+  return list.reverse(); // 최신월 위
 }
 
 function renderSupremaTable(list){
@@ -424,11 +411,11 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
   const first = getFirstRowInRange(cRowsSorted, base, endTime);
   return (first && first.TIME) ? first.TIME : base;
 }
+
 function updateCurrencyKPI(ymd, chartLabel){
   const c = CURRENCIES.find(x => x.label === chartLabel);
   if(!c){
     $("#kpiCurr,#kpiYavg,#kpiPavg,#kpiM3avg").text("-");
-    $("#kpiCurrDate,#kpiYavgNote").text("-");
     return;
   }
 
@@ -438,7 +425,6 @@ function updateCurrencyKPI(ymd, chartLabel){
 
   if(!cRows.length){
     $("#kpiCurr,#kpiYavg,#kpiPavg,#kpiM3avg").text("-");
-    $("#kpiCurrDate,#kpiYavgNote").text("-");
     return;
   }
 
@@ -447,21 +433,14 @@ function updateCurrencyKPI(ymd, chartLabel){
   const currTime = idx !== -1 ? cRows[idx].TIME : null;
 
   $("#kpiCurr").text(curr == null ? "-" : (fNum(curr) + " 원"));
-  $("#kpiCurrDate").text(currTime ? ("적용일: " + ymdToHyphen(currTime)) : "-");
 
   if(currTime){
     const year = ymd.slice(0,4);
     const yearStartAdj = getYearStartAdjusted(cRows, year, currTime);
     const yavg = calcAvg(cRows, yearStartAdj, currTime);
-
     $("#kpiYavg").text(yavg == null ? "-" : (fNum(yavg) + " 원"));
-    $("#kpiYavgNote").text(yearStartAdj !== (year + "0102")
-      ? `연초 기준: ${ymdToHyphen(yearStartAdj)}~`
-      : "연초 기준: 01-02~"
-    );
   } else {
     $("#kpiYavg").text("-");
-    $("#kpiYavgNote").text("-");
   }
 
   const yy = parseInt(ymd.slice(0,4),10);
@@ -540,6 +519,15 @@ function updateChart(rows, ymd, label){
 }
 
 /* ===== 조회 ===== */
+function normalizeRows(rows){
+  return (rows || []).map(r => ({
+    ...r,
+    TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
+    DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
+    ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
+  })).filter(r => /^\d{8}$/.test(r.TIME));
+}
+
 function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){
@@ -553,36 +541,25 @@ function search(){
 
   setLoading(true);
 
-  // ✅ JSONP는 실패해도 error가 안 타는 경우가 있어서, 무조건 로딩을 끄는 가드(20초)
+  // ✅ JSONP는 error가 안 타는 경우가 있어서 가드
   const guard = setTimeout(() => {
     setLoading(false);
     alert("응답이 지연되고 있어요. 백엔드/ECOS가 느리거나 오류일 수 있습니다. 잠시 후 다시 시도해주세요.");
   }, 20000);
 
   if(cachedData) {
-    setTimeout(() => {
-      try{
-        globalRows = JSON.parse(cachedData);
-
-        // ✅ TIME 정규화(하이픈/공백 제거)
-        globalRows = (globalRows || []).map(r => ({
-          ...r,
-          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
-          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
-          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
-        })).filter(r => /^\d{8}$/.test(r.TIME));
-
-        processResult(p);
-      }catch(e){
-        console.error(e);
-        sessionStorage.removeItem(cacheKey);
-        alert("저장된 캐시 데이터에 문제가 있어요. 캐시를 삭제하고 다시 조회합니다.");
-        location.reload();
-      }finally{
-        clearTimeout(guard);
-        setLoading(false);
-      }
-    }, 50);
+    try{
+      globalRows = normalizeRows(JSON.parse(cachedData));
+      processResult(p);
+    }catch(e){
+      console.error(e);
+      sessionStorage.removeItem(cacheKey);
+      alert("저장된 캐시 데이터에 문제가 있어요. 캐시를 삭제하고 다시 조회합니다.");
+      location.reload();
+    }finally{
+      clearTimeout(guard);
+      setLoading(false);
+    }
     return;
   }
 
@@ -592,15 +569,8 @@ function search(){
     timeout: 15000,
     success: function(data){
       try{
-        globalRows = data?.row || data?.StatisticSearch?.row || [];
-
-        // ✅ TIME 정규화(하이픈/공백 제거)
-        globalRows = (globalRows || []).map(r => ({
-          ...r,
-          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
-          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
-          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
-        })).filter(r => /^\d{8}$/.test(r.TIME));
+        const raw = data?.row || data?.StatisticSearch?.row || [];
+        globalRows = normalizeRows(raw);
 
         if(!globalRows.length) {
           alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
@@ -623,47 +593,6 @@ function search(){
       setLoading(false);
     }
   });
-}
-
-
-  $.  $.ajax({
-    url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
-    dataType: "jsonp",
-    timeout: 15000, // ✅ timeout 추가
-    success: function(data){
-      try{
-        globalRows = data?.row || data?.StatisticSearch?.row || [];
-
-        // ✅ TIME 정규화(하이픈/공백 제거)
-        globalRows = (globalRows || []).map(r => ({
-          ...r,
-          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
-          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
-          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
-        })).filter(r => /^\d{8}$/.test(r.TIME));
-
-        if(!globalRows.length) {
-          alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
-          return;
-        }
-
-        sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
-        processResult(p);
-      }catch(e){
-        console.error(e);
-        alert("처리 중 오류가 발생했습니다. 콘솔 로그를 확인해주세요.");
-      }
-    },
-    error: function(xhr, status, err){
-      console.error("AJAX error:", status, err);
-      alert("백엔드 호출에 실패했습니다. BACKEND 주소/권한/응답을 확인해주세요.");
-    },
-    complete: function(){
-      clearTimeout(guard);
-      setLoading(false);
-    }
-  });
-
 }
 
 function processResult(p){
@@ -673,7 +602,7 @@ function processResult(p){
   updateCurrencyKPI(p.ymd, label);
   updateChart(globalRows, p.ymd, label);
 
-  $("#subInfo").text("조회 기준일: " + p.iso );
+  $("#subInfo").text("조회 기준일: " + p.iso);
 }
 
 /* ===== 엑셀 ===== */
@@ -742,12 +671,12 @@ $(function(){
     search();
   });
 
+  // 첫 로드 자동 조회
   search();
 });
 </script>
 </body>
 </html>
-
 
 
 
