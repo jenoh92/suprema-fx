@@ -140,7 +140,6 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
         <div style="margin-top: 12px;">
           <div id="supremaTitle" style="font-size:13px; font-weight:900; color:#666; margin-bottom:8px;">
-            2025-04 ~ 기준월 적용환율 (최근월이 위)
           </div>
 
           <div class="table-wrap">
@@ -178,19 +177,19 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
             <div class="sub" id="kpiCurrDate">-</div>
           </div>
           <div class="kpi">
-            <div class="lab">연초 평균 (1/2~조회일)</div>
+            <div class="lab">당해년도 평균</div>
             <div class="val" id="kpiYavg">-</div>
             <div class="sub" id="kpiYavgNote">-</div>
           </div>
           <div class="kpi">
             <div class="lab">전월 평균</div>
             <div class="val" id="kpiPavg">-</div>
-            <div class="sub">전월 1일~말일</div>
+            <div class="sub"></div>
           </div>
           <div class="kpi">
-            <div class="lab">직전 3개월 평균</div>
+            <div class="lab">직전 3개월 평균 (당월 제외)</div>
             <div class="val" id="kpiM3avg">-</div>
-            <div class="sub">직전 3개월(전월 포함)</div>
+            <div class="sub"></div>
           </div>
         </div>
 
@@ -604,6 +603,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
