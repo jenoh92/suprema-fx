@@ -64,6 +64,20 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
   top: 0;
   z-index: 2;
 }
+
+/* ✅ 표 아래 주석(설명) */
+.table-footnote{
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #777;
+  line-height: 1.6;
+}
+.table-footnote .dot{
+  color: var(--burgundy);
+  font-weight: 900;
+  margin-right: 6px;
+}
 </style>
 </head>
 
@@ -96,7 +110,6 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
           <div class="res-item">
             <span class="res-label">원가</span>
             <span id="resWonka" class="res-val">-</span>
-            <!-- 설명(주석) 아래로 분리 -->
             <span class="res-note">(전월 평균과 직전 3개월 평균의 큰 값)</span>
           </div>
 
@@ -105,7 +118,6 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
           <div class="res-item">
             <span class="res-label">판가</span>
             <span id="resPanka" class="res-val">-</span>
-            <!-- 설명(주석) 아래로 분리 -->
             <span class="res-note">(원가 - 50원)</span>
           </div>
         </div>
@@ -123,22 +135,18 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
                   <th style="width:120px;">월</th>
                   <th>전월 평균</th>
                   <th>직전 3개월 평균</th>
-                  <th>
-                    원가<br>
-                    <span style="font-size:12px; font-weight:600; color:#7a7a7a;">
-                      (전월 평균과 직전 3개월 평균의 큰 값)
-                    </span>
-                  </th>
-                  <th>
-                    판가<br>
-                    <span style="font-size:12px; font-weight:600; color:#7a7a7a;">
-                      (원가 - 50원)
-                    </span>
-                  </th>
+                  <th>원가</th>
+                  <th>판가</th>
                 </tr>
               </thead>
               <tbody id="supremaTbody"></tbody>
             </table>
+          </div>
+
+          <!-- ✅ 표 아래 주석(설명) -->
+          <div class="table-footnote">
+            <div><span class="dot">•</span>원가: 전월 평균과 직전 3개월 평균 중 큰 값</div>
+            <div><span class="dot">•</span>판가: 원가 - 50원</div>
           </div>
         </div>
 
@@ -232,42 +240,29 @@ function getFirstTimeInRange(cRowsSorted, s, e){
   return r ? r.TIME : null;
 }
 
-/* 1/2가 주말/공휴일 등으로 데이터가 없으면, 실제 첫 데이터 날짜로 자동 보정 */
 function getYearStartAdjusted(cRowsSorted, year, endTime){
   const base = year + "0102";
   const first = getFirstTimeInRange(cRowsSorted, base, endTime);
   return first || base;
 }
 
-/* =========================
-   ✅ 슈프리마: 최근 6개월 누적 (최근월이 위)
-   ✅ 규칙:
-      - 원가 = MAX(전월평균, 직전3개월평균)
-      - 둘 중 하나만 있으면 그 값
-      - 판가 = 원가 - 50
-========================= */
+/* ===== 슈프리마 계산 ===== */
 function getLastNMonths(year, month, n){
   const out = [];
   for(let i=n-1; i>=0; i--){
     const d = new Date(year, month-1 - i, 1);
     out.push({ y: d.getFullYear(), m: d.getMonth()+1 });
   }
-  return out; // 오래된 -> 최신
+  return out;
 }
-
 function computeWonkaPanka(pavg, m3avg){
   let wonka = null;
-  if(pavg != null && m3avg != null){
-    wonka = Math.max(pavg, m3avg);
-  }else if(pavg != null){
-    wonka = pavg;
-  }else if(m3avg != null){
-    wonka = m3avg;
-  }
+  if(pavg != null && m3avg != null) wonka = Math.max(pavg, m3avg);
+  else if(pavg != null) wonka = pavg;
+  else if(m3avg != null) wonka = m3avg;
   const panka = (wonka != null) ? (wonka - 50) : null;
   return { wonka, panka };
 }
-
 function buildSupremaLast6Months(baseYear, baseMonth){
   const usdRows = globalRows
     .filter(r=>String(r.ITEM_NAME1 || "").includes("미국달러"))
@@ -276,41 +271,29 @@ function buildSupremaLast6Months(baseYear, baseMonth){
   const list = [];
   if(!usdRows.length) return list;
 
-  const months = getLastNMonths(baseYear, baseMonth, 6); // 오래된->최신
-
+  const months = getLastNMonths(baseYear, baseMonth, 6);
   months.forEach(({y, m})=>{
-    const prevMonthStart = toYmd(new Date(y, m-2, 1)); // (m-1)월 1일
-    const prevMonthEnd   = toYmd(new Date(y, m-1, 0)); // (m-1)월 말일
-
-    const m3Start = toYmd(new Date(y, m-4, 1)); // (m-3)월 1일
-    const m3End   = prevMonthEnd;               // (m-1)월 말일
+    const prevMonthStart = toYmd(new Date(y, m-2, 1));
+    const prevMonthEnd   = toYmd(new Date(y, m-1, 0));
+    const m3Start = toYmd(new Date(y, m-4, 1));
+    const m3End   = prevMonthEnd;
 
     const pavg = calcAvg(usdRows, prevMonthStart, prevMonthEnd);
     const m3avg = calcAvg(usdRows, m3Start, m3End);
-
     const { wonka, panka } = computeWonkaPanka(pavg, m3avg);
 
     const ym = `${y}${("0"+m).slice(-2)}`;
-    list.push({
-      ym,
-      ymLabel: ymToLabel(ym),
-      pavg, m3avg,
-      wonka, // 원가
-      panka  // 판가
-    });
+    list.push({ ym, ymLabel: ymToLabel(ym), pavg, m3avg, wonka, panka });
   });
 
-  return list.reverse(); // 최근월이 위
+  return list.reverse();
 }
-
 function renderSupremaTable(list){
   $("#supremaTbody").empty();
-
   if(!list.length){
     $("#supremaTbody").append(`<tr><td colspan="5" style="padding:18px; color:#777;">표시할 데이터가 없습니다.</td></tr>`);
     return;
   }
-
   list.forEach(r=>{
     $("#supremaTbody").append(`
       <tr>
@@ -323,14 +306,9 @@ function renderSupremaTable(list){
     `);
   });
 }
-
-/* =========================
-   ✅ 슈프리마 자동 계산 (조회일 기준)
-========================= */
 function calculateSuprema(){
   const d = $("#dateInput").val();
   if(!d) return;
-
   const y = parseInt(d.slice(0,4),10);
   const m = parseInt(d.slice(5,7),10);
 
@@ -350,21 +328,15 @@ function calculateSuprema(){
   }
 }
 
-/* =========================
-   ✅ 메인 조회: 전년도 넘어가도 전월/직전3개월/최근6개월(슈프리마) 계산되도록
-   - 조회일의 "월"을 기준으로: 최소 9개월 전 1일(fetch)
-========================= */
+/* ===== 메인 조회 / 차트 / 엑셀 ===== */
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
-
   const y = parseInt(ymd.slice(0,4),10);
   const m = parseInt(ymd.slice(4,6),10);
 
-  // 최근6개월 표 + 그 안의 직전3개월 평균까지 커버: 조회월 기준 9개월 전 1일로 안전하게 확장
   const needStartForSuprema = toYmd(new Date(y, m-10, 1));
   const yearStart = y + "0102";
-
   const startForFetch = (needStartForSuprema < yearStart) ? needStartForSuprema : yearStart;
 
   const cacheKey = `rate_data_${startForFetch}_${ymd}`;
@@ -395,14 +367,12 @@ function search(){
     }
   });
 }
-
 function processResult(ymd, d) {
   renderMainTable(ymd);
   updateChart(globalRows, ymd, $("#chartCurrency").val());
   calculateSuprema();
   $("#subInfo").text("조회 기준일: " + d + " (데이터 없으면 직전 영업일 자동 적용)");
 }
-
 function renderMainTable(ymd){
   $("#tbody").empty();
 
@@ -419,7 +389,6 @@ function renderMainTable(ymd){
     const idx = findLastIndexLE(cRows, ymd);
     const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
     const currTime = idx !== -1 ? cRows[idx].TIME : null;
-
     const prev = (idx > 0) ? pNum(cRows[idx-1].DATA_VALUE) : null;
 
     let diffHtml = "";
@@ -436,11 +405,9 @@ function renderMainTable(ymd){
 
     const yy = parseInt(ymd.slice(0,4),10);
     const mm = parseInt(ymd.slice(4,6),10);
-
     const prevMonthStart = toYmd(new Date(yy, mm-2, 1));
     const prevMonthEnd   = toYmd(new Date(yy, mm-1, 0));
     const pavg = calcAvg(cRows, prevMonthStart, prevMonthEnd);
-
     const m3Start = toYmd(new Date(yy, mm-4, 1));
     const m3End   = prevMonthEnd;
     const m3avg = calcAvg(cRows, m3Start, m3End);
@@ -466,7 +433,6 @@ function renderMainTable(ymd){
     `);
   });
 }
-
 function updateChart(rows, ymd, label){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
@@ -480,7 +446,6 @@ function updateChart(rows, ymd, label){
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const ctx = document.getElementById("rateChart").getContext("2d");
-
   const gradient = ctx.createLinearGradient(0, 0, 0, 400);
   gradient.addColorStop(0, 'rgba(161, 42, 68, 0.4)');
   gradient.addColorStop(1, 'rgba(161, 42, 68, 0)');
@@ -526,30 +491,21 @@ function updateChart(rows, ymd, label){
     }
   });
 }
-
-/* =========================
-   ✅ 엑셀 내려받기:
-   - 메인 테이블 + 슈프리마(최근6개월) "계산값을 숫자로" 생성하여 누적 저장
-========================= */
 function downloadExcel(){
   const wb = XLSX.utils.book_new();
 
-  // 1) 메인 테이블
   const table = document.getElementById("mainTable");
   const clone = table.cloneNode(true);
   $(clone).find(".rate-diff").remove();
   const wsMain = XLSX.utils.table_to_sheet(clone);
   XLSX.utils.book_append_sheet(wb, wsMain, "환율데이터");
 
-  // 2) 슈프리마(최근6개월) - 조회일 기준으로 계산
   const d = $("#dateInput").val();
   const y = parseInt(d.slice(0,4),10);
   const m = parseInt(d.slice(5,7),10);
   const list = buildSupremaLast6Months(y, m);
 
-  const aoa = [
-    ["월", "전월 평균", "직전 3개월 평균", "원가", "판가"]
-  ];
+  const aoa = [["월","전월 평균","직전 3개월 평균","원가","판가"]];
   list.forEach(r=>{
     aoa.push([
       r.ymLabel,
@@ -562,7 +518,6 @@ function downloadExcel(){
 
   const wsSuprema = XLSX.utils.aoa_to_sheet(aoa);
 
-  // 숫자 서식(2자리 소수)
   const range = XLSX.utils.decode_range(wsSuprema["!ref"]);
   for(let R=1; R<=range.e.r; R++){
     for(let C=1; C<=4; C++){
@@ -575,7 +530,6 @@ function downloadExcel(){
   }
 
   XLSX.utils.book_append_sheet(wb, wsSuprema, "슈프리마(최근6개월)");
-
   XLSX.writeFile(wb, `Suprema_Rate_${d}.xlsx`);
 }
 
@@ -593,7 +547,6 @@ $(function(){
     updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val())
   );
 
-  // 조회일 변경 시 자동 조회
   $("#dateInput").on("change", function(){
     search();
   });
