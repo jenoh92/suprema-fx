@@ -585,7 +585,7 @@ function processResult(p){
   updateCurrencyKPI(p.ymd, label);
   updateChart(globalRows, p.ymd, label);
 
-  $("#subInfo").text("조회 기준일: " + p.iso + " (데이터 없으면 직전 영업일 자동 적용)");
+  $("#subInfo").text("조회 기준일: " + p.iso );
 }
 
 /* ===== 엑셀 ===== */
@@ -659,6 +659,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
