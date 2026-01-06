@@ -140,7 +140,6 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 </head>
 
 <body>
-  <!-- ✅ 로딩 오버레이 -->
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -183,9 +182,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
         </div>
 
         <div style="margin-top: 12px;">
-          <div id="supremaTitle" style="font-size:13px; font-weight:900; color:#666; margin-bottom:8px;">
-            2025-04 ~ 기준월 적용환율 (최근월이 위)
-          </div>
+          <!-- ✅ 노란색 부분(제목) 제거: 아예 표시하지 않음 -->
 
           <div class="table-wrap">
             <table id="supremaTable">
@@ -298,7 +295,6 @@ function parseDateInput(val){
   return null;
 }
 
-/* ✅ 로딩 표시/해제 */
 function setLoading(on){
   if(on){
     $("#loadingOverlay").css("display","flex").attr("aria-hidden","false");
@@ -400,8 +396,6 @@ function renderSupremaTable(list){
 function calculateSuprema(){
   const p = parseDateInput($("#dateInput").val());
   if(!p) return;
-
-  $("#supremaTitle").text(`2025-04 ~ ${p.y}-${("0"+p.m).slice(-2)} 적용환율 (최근월이 위)`);
 
   const list = buildSupremaFrom202504(p.y, p.m);
   renderSupremaTable(list);
@@ -548,7 +542,6 @@ function search(){
     return;
   }
 
-  // 2025-04부터 표를 만들 거라서, 평균 계산 안정적으로 2025-01-01부터 fetch
   const startForFetch = "20250101";
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
   const cachedData = sessionStorage.getItem(cacheKey);
@@ -556,7 +549,6 @@ function search(){
   setLoading(true);
 
   if(cachedData) {
-    // 캐시일 때도 로딩감을 주기 위해 짧게 보여줌
     setTimeout(() => {
       globalRows = JSON.parse(cachedData);
       processResult(p);
@@ -608,8 +600,6 @@ function downloadExcel(){
   const list = buildSupremaFrom202504(p.y, p.m);
 
   const aoa = [["월","전월 평균","직전 3개월 평균","원가","판가"]];
-
-  // 엑셀은 오래된 달 → 최신 달 순서가 보기 편해서 reverse()로 저장
   list.slice().reverse().forEach(r=>{
     aoa.push([
       r.ymLabel,
@@ -669,10 +659,5 @@ $(function(){
 </script>
 </body>
 </html>
-
-
-
-
-
 
 
