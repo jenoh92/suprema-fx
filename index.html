@@ -124,11 +124,6 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
       <div class="card" style="padding: 16px;">
         <div class="section-title">※ 슈프리마 적용환율 상세 (USD)</div>
 
-        <!-- ✅ (노란 문구 제거: 괄호 문장 없음) -->
-        <div id="supremaBasis" style="font-size:12px; color:#666; font-weight:800; margin-bottom: 10px;">
-        
-        </div>
-
         <div class="res-card">
           <div class="res-item">
             <span class="res-label">원가</span>
@@ -145,6 +140,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
         <div style="margin-top: 12px;">
           <div id="supremaTitle" style="font-size:13px; font-weight:900; color:#666; margin-bottom:8px;">
+            2025-04 ~ 기준월 적용환율 (최근월이 위)
           </div>
 
           <div class="table-wrap">
@@ -257,6 +253,7 @@ function parseDateInput(val){
   }
   return null;
 }
+
 function findLastIndexLE(cRowsSorted, targetYmd){
   let lo = 0, hi = cRowsSorted.length - 1, ans = -1;
   while(lo <= hi){
@@ -269,6 +266,7 @@ function findLastIndexLE(cRowsSorted, targetYmd){
   }
   return ans;
 }
+
 function calcAvg(cRowsSorted, s, e){
   const v = cRowsSorted
     .filter(r=>r.TIME >= s && r.TIME <= e)
@@ -277,15 +275,18 @@ function calcAvg(cRowsSorted, s, e){
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
 }
 
-/* ===== 슈프리마 ===== */
-function getLastNMonths(year, month, n){
+/* ===== 슈프리마(USD) : 2025-04부터 기준월까지 ===== */
+function listMonthsFrom(startY, startM, endY, endM){
   const out = [];
-  for(let i=n-1; i>=0; i--){
-    const d = new Date(year, month-1 - i, 1);
-    out.push({ y: d.getFullYear(), m: d.getMonth()+1 });
+  let y = startY, m = startM;
+  while(y < endY || (y === endY && m <= endM)){
+    out.push({ y, m });
+    m++;
+    if(m === 13){ m = 1; y++; }
   }
   return out;
 }
+
 function computeWonkaPanka(pavg, m3avg){
   let wonka = null;
   if(pavg != null && m3avg != null) wonka = Math.max(pavg, m3avg);
@@ -294,7 +295,8 @@ function computeWonkaPanka(pavg, m3avg){
   const panka = (wonka != null) ? (wonka - 50) : null;
   return { wonka, panka };
 }
-function buildSupremaLast6Months(baseYear, baseMonth){
+
+function buildSupremaFrom202504(baseYear, baseMonth){
   const usdRows = globalRows
     .filter(r=>String(r.ITEM_NAME1 || "").includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
@@ -302,7 +304,9 @@ function buildSupremaLast6Months(baseYear, baseMonth){
   const list = [];
   if(!usdRows.length) return list;
 
-  const months = getLastNMonths(baseYear, baseMonth, 6);
+  const startY = 2025, startM = 4;
+  const months = listMonthsFrom(startY, startM, baseYear, baseMonth);
+
   months.forEach(({y, m})=>{
     const prevMonthStart = toYmd(new Date(y, m-2, 1));
     const prevMonthEnd   = toYmd(new Date(y, m-1, 0));
@@ -317,8 +321,9 @@ function buildSupremaLast6Months(baseYear, baseMonth){
     list.push({ ym, ymLabel: ymToLabel(ym), pavg, m3avg, wonka, panka });
   });
 
-  return list.reverse();
+  return list.reverse(); // 최근월이 위
 }
+
 function renderSupremaTable(list){
   $("#supremaTbody").empty();
   if(!list.length){
@@ -337,14 +342,14 @@ function renderSupremaTable(list){
     `);
   });
 }
+
 function calculateSuprema(){
   const p = parseDateInput($("#dateInput").val());
   if(!p) return;
 
-  /* ✅ (노란 문구 제거) */
-  $("#supremaTitle").text(`최근 6개월 (기준: ${p.y}-${("0"+p.m).slice(-2)})`);
+  $("#supremaTitle").text(`2025-04 ~ ${p.y}-${("0"+p.m).slice(-2)} 적용환율 (최근월이 위)`);
 
-  const list = buildSupremaLast6Months(p.y, p.m);
+  const list = buildSupremaFrom202504(p.y, p.m);
   renderSupremaTable(list);
 
   const latest = list[0];
@@ -357,7 +362,7 @@ function calculateSuprema(){
   }
 }
 
-/* ===== KPI + 차트 ===== */
+/* ===== KPI/차트 ===== */
 function getFirstRowInRange(cRowsSorted, s, e){
   return cRowsSorted.find(x => x.TIME >= s && x.TIME <= e) || null;
 }
@@ -420,6 +425,7 @@ function updateCurrencyKPI(ymd, chartLabel){
   $("#kpiPavg").text(pavg == null ? "-" : (fNum(pavg) + " 원"));
   $("#kpiM3avg").text(m3avg == null ? "-" : (fNum(m3avg) + " 원"));
 }
+
 function updateChart(rows, ymd, label){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
@@ -480,7 +486,7 @@ function updateChart(rows, ymd, label){
   });
 }
 
-/* ===== 조회/엑셀 ===== */
+/* ===== 조회 ===== */
 function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){
@@ -488,9 +494,8 @@ function search(){
     return;
   }
 
-  const needStart = toYmd(new Date(p.y, p.m-10, 1));
-  const yearStart = p.y + "0102";
-  const startForFetch = (needStart < yearStart) ? needStart : yearStart;
+  // ✅ 2025-04부터 표를 만들 거라서, 평균 계산까지 안정적으로 하려면 최소 2025-01-01부터는 가져오는 게 안전
+  const startForFetch = "20250101";
 
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
   const cachedData = sessionStorage.getItem(cacheKey);
@@ -528,17 +533,19 @@ function processResult(p){
   $("#subInfo").text("조회 기준일: " + p.iso + " (데이터 없으면 직전 영업일 자동 적용)");
 }
 
+/* ===== 엑셀 ===== */
 function downloadExcel(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){
     alert("조회일을 확인해주세요.");
     return;
   }
+
   const wb = XLSX.utils.book_new();
-  const list = buildSupremaLast6Months(p.y, p.m);
+  const list = buildSupremaFrom202504(p.y, p.m);
 
   const aoa = [["월","전월 평균","직전 3개월 평균","원가","판가"]];
-  list.forEach(r=>{
+  list.slice().reverse().forEach(r=>{
     aoa.push([
       r.ymLabel,
       (r.pavg == null ? "" : Number(r.pavg)),
@@ -560,7 +567,7 @@ function downloadExcel(){
     }
   }
 
-  XLSX.utils.book_append_sheet(wb, ws, "슈프리마(최근6개월)");
+  XLSX.utils.book_append_sheet(wb, ws, "슈프리마(누적)");
   XLSX.writeFile(wb, `Suprema_Rate_${p.iso}.xlsx`);
 }
 
@@ -597,7 +604,6 @@ $(function(){
 </script>
 </body>
 </html>
-
 
 
 
