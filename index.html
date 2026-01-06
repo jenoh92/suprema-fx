@@ -552,14 +552,14 @@ function search(){
   const cachedData = sessionStorage.getItem(cacheKey);
 
   setLoading(true);
-    // ✅ JSONP는 실패해도 error가 안 타는 경우가 있어서, 무조건 로딩을 끄는 가드(20초)
+
+  // ✅ JSONP는 실패해도 error가 안 타는 경우가 있어서, 무조건 로딩을 끄는 가드(20초)
   const guard = setTimeout(() => {
     setLoading(false);
     alert("응답이 지연되고 있어요. 백엔드/ECOS가 느리거나 오류일 수 있습니다. 잠시 후 다시 시도해주세요.");
   }, 20000);
 
-
-    if(cachedData) {
+  if(cachedData) {
     setTimeout(() => {
       try{
         globalRows = JSON.parse(cachedData);
@@ -575,7 +575,7 @@ function search(){
         processResult(p);
       }catch(e){
         console.error(e);
-        sessionStorage.removeItem(cacheKey); // 캐시가 깨졌으면 삭제
+        sessionStorage.removeItem(cacheKey);
         alert("저장된 캐시 데이터에 문제가 있어요. 캐시를 삭제하고 다시 조회합니다.");
         location.reload();
       }finally{
@@ -586,7 +586,45 @@ function search(){
     return;
   }
 
-  }
+  $.ajax({
+    url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
+    dataType: "jsonp",
+    timeout: 15000,
+    success: function(data){
+      try{
+        globalRows = data?.row || data?.StatisticSearch?.row || [];
+
+        // ✅ TIME 정규화(하이픈/공백 제거)
+        globalRows = (globalRows || []).map(r => ({
+          ...r,
+          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
+          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
+          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
+        })).filter(r => /^\d{8}$/.test(r.TIME));
+
+        if(!globalRows.length) {
+          alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
+          return;
+        }
+
+        sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
+        processResult(p);
+      }catch(e){
+        console.error(e);
+        alert("처리 중 오류가 발생했습니다. 콘솔 로그를 확인해주세요.");
+      }
+    },
+    error: function(xhr, status, err){
+      console.error("AJAX error:", status, err);
+      alert("백엔드 호출에 실패했습니다. BACKEND 주소/권한/응답을 확인해주세요.");
+    },
+    complete: function(){
+      clearTimeout(guard);
+      setLoading(false);
+    }
+  });
+}
+
 
   $.  $.ajax({
     url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
@@ -709,6 +747,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
