@@ -559,42 +559,73 @@ function search(){
   }, 20000);
 
 
-  if(cachedData) {
+    if(cachedData) {
     setTimeout(() => {
-      globalRows = JSON.parse(cachedData);
-      processResult(p);
-      setLoading(false);
-    }, 150);
+      try{
+        globalRows = JSON.parse(cachedData);
+
+        // ✅ TIME 정규화(하이픈/공백 제거)
+        globalRows = (globalRows || []).map(r => ({
+          ...r,
+          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
+          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
+          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
+        })).filter(r => /^\d{8}$/.test(r.TIME));
+
+        processResult(p);
+      }catch(e){
+        console.error(e);
+        sessionStorage.removeItem(cacheKey); // 캐시가 깨졌으면 삭제
+        alert("저장된 캐시 데이터에 문제가 있어요. 캐시를 삭제하고 다시 조회합니다.");
+        location.reload();
+      }finally{
+        clearTimeout(guard);
+        setLoading(false);
+      }
+    }, 50);
     return;
   }
 
-  $.ajax({
+  }
+
+  $.  $.ajax({
     url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
     dataType: "jsonp",
+    timeout: 15000, // ✅ timeout 추가
     success: function(data){
-      globalRows = data?.row || data?.StatisticSearch?.row || [];
-      // ✅ TIME / DATA_VALUE 정규화 (2025-12가 안 잡히는 문제 방지)
-globalRows = (globalRows || []).map(r => {
-  const t = String(r.TIME ?? "").trim().replace(/-/g, ""); // 2025-12-31 → 20251231
-  const v = String(r.DATA_VALUE ?? "").trim();
-  const item = String(r.ITEM_NAME1 ?? "").trim();
-  return { ...r, TIME: t, DATA_VALUE: v, ITEM_NAME1: item };
-}).filter(r => /^\d{8}$/.test(r.TIME));
+      try{
+        globalRows = data?.row || data?.StatisticSearch?.row || [];
 
-      if(!globalRows.length) {
-        setLoading(false);
-        alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
-        return;
+        // ✅ TIME 정규화(하이픈/공백 제거)
+        globalRows = (globalRows || []).map(r => ({
+          ...r,
+          TIME: String(r.TIME ?? "").trim().replace(/-/g, ""),
+          DATA_VALUE: String(r.DATA_VALUE ?? "").trim(),
+          ITEM_NAME1: String(r.ITEM_NAME1 ?? "").trim()
+        })).filter(r => /^\d{8}$/.test(r.TIME));
+
+        if(!globalRows.length) {
+          alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
+          return;
+        }
+
+        sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
+        processResult(p);
+      }catch(e){
+        console.error(e);
+        alert("처리 중 오류가 발생했습니다. 콘솔 로그를 확인해주세요.");
       }
-      sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
-      processResult(p);
-      setLoading(false);
     },
-    error: function(){
+    error: function(xhr, status, err){
+      console.error("AJAX error:", status, err);
+      alert("백엔드 호출에 실패했습니다. BACKEND 주소/권한/응답을 확인해주세요.");
+    },
+    complete: function(){
+      clearTimeout(guard);
       setLoading(false);
-      alert("백엔드 호출에 실패했습니다. BACKEND 주소/권한을 확인해주세요.");
     }
   });
+
 }
 
 function processResult(p){
@@ -678,6 +709,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
