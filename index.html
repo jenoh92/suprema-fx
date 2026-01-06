@@ -42,6 +42,11 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
   grid-template-columns: 1.05fr 0.95fr;
   gap:14px;
   align-items:start;
+  /* ✅ 왼쪽(슈프리마) 카드 높이 늘려서 오른쪽과 하단 맞추기 */
+.suprema-left{
+  min-height: 760px; /* 740~820 사이로 화면에 맞게 미세조정 */
+}
+
 }
 
 .res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 14px 14px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
@@ -164,7 +169,7 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
 
     <div class="two-col">
 
-      <div class="card" style="padding: 16px;">
+      <div class="card suprema-left" style="padding: 16px;">
         <div class="section-title">※ 슈프리마 적용환율 상세 (USD)</div>
 
         <div class="res-card">
@@ -659,6 +664,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
