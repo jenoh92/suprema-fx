@@ -119,17 +119,17 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
         </div>
       </div>
 
-      <!-- ✅ 직전 6개월 누적 리스트 (최근월이 위) -->
+      <!-- ✅ 최근 6개월 누적 리스트 (최근월이 위) -->
       <div style="margin-top:18px;">
         <div id="supremaTitle" style="font-size:14px; font-weight:800; color:#666; margin-bottom:10px;">
-          직전 6개월 적용환율 (최근월이 위)
+          최근 6개월 적용환율 (최근월이 위)
         </div>
 
         <div class="table-wrap suprema-scroll">
           <table id="supremaTable">
             <thead>
               <tr>
-                <th style="width:120px;">기준월</th>
+                <th style="width:120px;">월</th>
                 <th>전월 평균</th>
                 <th>직전 3개월 평균</th>
                 <th>
@@ -197,12 +197,19 @@ const CURRENCIES = [
 
 let globalRows = [];
 const fNum = (x) => x == null ? "-" : Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2, maximumFractionDigits:2});
-const pNum = (x) => isNaN(parseFloat(String(x).replace(/,/g,""))) ? null : parseFloat(String(x).replace(/,/g,""));
+const pNum = (x) => {
+  if(x == null) return null;
+  const s = String(x).replace(/,/g,"").trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+};
 const toYmd = (d) => d.getFullYear() + ("0"+(d.getMonth()+1)).slice(-2) + ("0"+d.getDate()).slice(-2);
-const ymLabel = (y, m) => `${y}-${("0"+m).slice(-2)}`; // 2025-12
 
 function ymdToHyphen(ymd){
   return `${ymd.slice(0,4)}-${ymd.slice(4,6)}-${ymd.slice(6,8)}`;
+}
+function ymToLabel(ym){
+  return `${ym.slice(0,4)}-${ym.slice(4,6)}`;
 }
 
 function findLastIndexLE(cRowsSorted, targetYmd){
@@ -231,6 +238,7 @@ function getFirstTimeInRange(cRowsSorted, s, e){
   return r ? r.TIME : null;
 }
 
+/* 1/2가 주말/공휴일 등으로 데이터가 없으면, 실제 첫 데이터 날짜로 자동 보정 */
 function getYearStartAdjusted(cRowsSorted, year, endTime){
   const base = year + "0102";
   const first = getFirstTimeInRange(cRowsSorted, base, endTime);
@@ -238,50 +246,65 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
 }
 
 /* =========================
-   ✅ 슈프리마: "직전 6개월" 누적(최근월이 위)
-   - 기준월(baseMonth): 선택한 연/월
-   - 표에는 baseMonth의 "전월"부터 6개월을 표시:
-     예) base=2026-01 => 표시 2025-12,11,10,09,08,07
+   ✅ 슈프리마: 최근 6개월 누적 (최근월이 위)
+   ✅ 최종원가/판가 규칙 확정:
+      - 최종원가 = MAX(전월평균, 직전3개월평균)
+      - 둘 중 하나만 있으면 그 값
+      - 최종판가 = 최종원가 - 50
 ========================= */
-function buildSupremaLast6Months(baseYear, baseMonth){
+function getLastNMonths(year, month, n){
+  const out = [];
+  for(let i=n-1; i>=0; i--){
+    const d = new Date(year, month-1 - i, 1);
+    out.push({ y: d.getFullYear(), m: d.getMonth()+1 });
+  }
+  return out; // 오래된 -> 최신
+}
+
+function computeWonkaPanka(pavg, m3avg){
+  let wonka = null;
+  if(pavg != null && m3avg != null){
+    wonka = Math.max(pavg, m3avg);
+  }else if(pavg != null){
+    wonka = pavg;
+  }else if(m3avg != null){
+    wonka = m3avg;
+  }
+  const panka = (wonka != null) ? (wonka - 50) : null;
+  return { wonka, panka };
+}
+
+function buildSupremaLast6Months(year, month){
   const usdRows = globalRows
-    .filter(r=>r.ITEM_NAME1.includes("미국달러"))
+    .filter(r=>String(r.ITEM_NAME1 || "").includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const list = [];
   if(!usdRows.length) return list;
 
-  // 표시할 시작: baseMonth의 전월부터 6개
-  for(let i=1; i<=6; i++){
-    const d = new Date(baseYear, baseMonth-1, 1); // baseMonth 1일
-    d.setMonth(d.getMonth() - i);                // i개월 전(=전월부터)
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
+  const months = getLastNMonths(year, month, 6); // 오래된->최신
 
-    // 이 행(표시월: y-m)을 "기준월"로 보고,
-    // 전월 평균 = (기준월의 전월) 평균
-    // 직전 3개월 평균 = (기준월 기준 전월 포함 과거3개월) 평균
-
+  months.forEach(({y, m})=>{
     const prevMonthStart = toYmd(new Date(y, m-2, 1)); // (m-1)월 1일
     const prevMonthEnd   = toYmd(new Date(y, m-1, 0)); // (m-1)월 말일
 
-    const m3Start = toYmd(new Date(y, m-4, 1));        // (m-3)월 1일
-    const m3End   = prevMonthEnd;                      // (m-1)월 말일
+    const m3Start = toYmd(new Date(y, m-4, 1)); // (m-3)월 1일
+    const m3End   = prevMonthEnd;               // (m-1)월 말일
 
     const pavg = calcAvg(usdRows, prevMonthStart, prevMonthEnd);
     const m3avg = calcAvg(usdRows, m3Start, m3End);
 
-    let wonka = null, panka = null;
-    if(pavg != null && m3avg != null){
-      wonka = Math.max(pavg, m3avg);
-      panka = wonka - 50;
-    }
+    const { wonka, panka } = computeWonkaPanka(pavg, m3avg);
 
-    list.push({ y, m, pavg, m3avg, wonka, panka });
-  }
+    const ym = `${y}${("0"+m).slice(-2)}`;
+    list.push({
+      ym,
+      ymLabel: ymToLabel(ym),
+      pavg, m3avg, wonka, panka
+    });
+  });
 
-  // 최근월(전월)이 위로
-  return list;
+  return list.reverse(); // 최근월이 위
 }
 
 function renderSupremaTable(list){
@@ -295,7 +318,7 @@ function renderSupremaTable(list){
   list.forEach(r=>{
     $("#supremaTbody").append(`
       <tr>
-        <td style="font-weight:900;">${ymLabel(r.y, r.m)}</td>
+        <td style="font-weight:800;">${r.ymLabel}</td>
         <td>${fNum(r.pavg)}</td>
         <td>${fNum(r.m3avg)}</td>
         <td style="font-weight:900;">${r.wonka == null ? "-" : fNum(r.wonka)}</td>
@@ -306,38 +329,21 @@ function renderSupremaTable(list){
 }
 
 /* =========================
-   ✅ 조회(fetch) 범위 확장:
-   - 메인 테이블: 전월/직전3개월 평균 위해 최소 (m-3)월 1일 필요
-   - 슈프리마 표: "직전 6개월" 행들 각각이 직전3개월 평균을 계산하므로
-     가장 오래된 행(6개월 전)의 (그 기준월 - 3개월) 시작까지 필요
-   => 안전하게: baseMonth 기준 "9개월 전 1일"부터 fetch
-   예) base=2026-01 => 2025-04-01부터 fetch (충분)
+   ✅ 메인 조회: 전년도 넘어가도 전월/직전3개월/최근6개월(슈프리마) 계산되도록
+   - 선택월 기준 "최소 9개월 전 1일"부터 fetch
 ========================= */
-function calcFetchStartForSuprema(baseY, baseM, ymd){
-  const needForSuprema = toYmd(new Date(baseY, baseM-1, 1));
-  // baseMonth 기준 9개월 전 1일
-  const supStart = toYmd(new Date(baseY, baseM-10, 1));
-
-  // 메인테이블(해당 조회월 기준 직전3개월)도 포함하려면 최소 (조회월-3개월) 시작
-  const yy = parseInt(ymd.slice(0,4),10);
-  const mm = parseInt(ymd.slice(4,6),10);
-  const mainStart = toYmd(new Date(yy, mm-4, 1));
-
-  // 연초 평균은 1/2부터(데이터 없으면 보정)
-  const yearStart = yy + "0102";
-
-  // 가장 이른 start 선택
-  return [supStart, mainStart, yearStart].sort()[0];
-}
-
 function search(){
   const d = $("#dateInput").val();
   const ymd = d.replace(/-/g,"");
 
-  const baseYear = parseInt($("#selYear").val(),10);
-  const baseMonth = parseInt($("#selMonth").val(),10);
+  const y = parseInt(ymd.slice(0,4),10);
+  const m = parseInt(ymd.slice(4,6),10);
 
-  const startForFetch = calcFetchStartForSuprema(baseYear, baseMonth, ymd);
+  // 최근6개월 표 + 그 안의 직전3개월 평균까지 커버: 선택월 기준 9개월 전 1일로 안전하게 확장
+  const needStartForSuprema = toYmd(new Date(y, m-10, 1));
+  const yearStart = y + "0102";
+
+  const startForFetch = (needStartForSuprema < yearStart) ? needStartForSuprema : yearStart;
   const cacheKey = `rate_data_${startForFetch}_${ymd}`;
 
   const cachedData = sessionStorage.getItem(cacheKey);
@@ -380,7 +386,7 @@ function renderMainTable(ymd){
 
   CURRENCIES.forEach(c=>{
     const cRows = globalRows
-      .filter(r=>r.ITEM_NAME1.includes(c.key))
+      .filter(r=>String(r.ITEM_NAME1 || "").includes(c.key))
       .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
     if(!cRows.length){
@@ -406,14 +412,14 @@ function renderMainTable(ymd){
     const yearStartAdj = (currTime ? getYearStartAdjusted(cRows, year, currTime) : null);
     const yavg = (currTime && yearStartAdj) ? calcAvg(cRows, yearStartAdj, currTime) : null;
 
-    const y = parseInt(ymd.slice(0,4),10);
-    const m = parseInt(ymd.slice(4,6),10);
+    const yy = parseInt(ymd.slice(0,4),10);
+    const mm = parseInt(ymd.slice(4,6),10);
 
-    const prevMonthStart = toYmd(new Date(y, m-2, 1));
-    const prevMonthEnd   = toYmd(new Date(y, m-1, 0));
+    const prevMonthStart = toYmd(new Date(yy, mm-2, 1));
+    const prevMonthEnd   = toYmd(new Date(yy, mm-1, 0));
     const pavg = calcAvg(cRows, prevMonthStart, prevMonthEnd);
 
-    const m3Start = toYmd(new Date(y, m-4, 1));
+    const m3Start = toYmd(new Date(yy, mm-4, 1));
     const m3End   = prevMonthEnd;
     const m3avg = calcAvg(cRows, m3Start, m3End);
 
@@ -448,7 +454,7 @@ function updateChart(rows, ymd, label){
   const threeStart = toYmd(new Date(y, m-4, 1));
 
   const cRows = rows
-    .filter(r=>r.ITEM_NAME1.includes(key) && r.TIME >= threeStart && r.TIME <= ymd)
+    .filter(r=>String(r.ITEM_NAME1 || "").includes(key) && r.TIME >= threeStart && r.TIME <= ymd)
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const ctx = document.getElementById("rateChart").getContext("2d");
@@ -499,35 +505,72 @@ function updateChart(rows, ymd, label){
   });
 }
 
+/* =========================
+   ✅ 엑셀 내려받기 개선:
+   - 슈프리마(최근6개월) 시트는 DOM 복사가 아니라 "계산된 리스트"를 다시 만들어 숫자로 저장
+   - 최종원가/판가 누적 포함 (월별 6줄)
+========================= */
 function downloadExcel(){
   const wb = XLSX.utils.book_new();
 
+  // 1) 메인 테이블(표시용 테이블 그대로)
   const table = document.getElementById("mainTable");
   const clone = table.cloneNode(true);
   $(clone).find(".rate-diff").remove();
-  const ws = XLSX.utils.table_to_sheet(clone);
-  XLSX.utils.book_append_sheet(wb, ws, "환율데이터");
+  const wsMain = XLSX.utils.table_to_sheet(clone);
+  XLSX.utils.book_append_sheet(wb, wsMain, "환율데이터");
 
-  const sTable = document.getElementById("supremaTable");
-  const sWs = XLSX.utils.table_to_sheet(sTable);
-  XLSX.utils.book_append_sheet(wb, sWs, "슈프리마(USD)");
+  // 2) 슈프리마(최근 6개월) - 계산값을 숫자로 생성
+  const year = parseInt($("#selYear").val(),10);
+  const month = parseInt($("#selMonth").val(),10);
+  const list = buildSupremaLast6Months(year, month);
+
+  const aoa = [
+    ["월", "전월 평균", "직전 3개월 평균", "최종 원가(MAX)", "최종 판가(원가-50)"]
+  ];
+
+  // 엑셀은 최신월이 위로 (화면과 동일)
+  list.forEach(r=>{
+    aoa.push([
+      r.ymLabel,
+      (r.pavg == null ? "" : Number(r.pavg)),
+      (r.m3avg == null ? "" : Number(r.m3avg)),
+      (r.wonka == null ? "" : Number(r.wonka)),
+      (r.panka == null ? "" : Number(r.panka)),
+    ]);
+  });
+
+  const wsSuprema = XLSX.utils.aoa_to_sheet(aoa);
+
+  // 숫자 서식(2자리 소수) 적용
+  const range = XLSX.utils.decode_range(wsSuprema["!ref"]);
+  for(let R=1; R<=range.e.r; R++){
+    for(let C=1; C<=4; C++){
+      const cellAddr = XLSX.utils.encode_cell({r:R, c:C});
+      const cell = wsSuprema[cellAddr];
+      if(cell && typeof cell.v === "number"){
+        cell.z = "#,##0.00";
+      }
+    }
+  }
+  XLSX.utils.book_append_sheet(wb, wsSuprema, "슈프리마(최근6개월)");
 
   XLSX.writeFile(wb, `Suprema_Rate_${$("#dateInput").val()}.xlsx`);
 }
 
 /* =========================
-   ✅ 슈프리마 계산: 직전 6개월 표 + 최신(전월) 요약
+   ✅ 슈프리마 계산: 최근 6개월 누적 + 최신월 요약
 ========================= */
 function calculateSuprema(){
-  const baseY = parseInt($("#selYear").val(),10);
-  const baseM = parseInt($("#selMonth").val(),10);
+  const year = parseInt($("#selYear").val(),10);
+  const month = parseInt($("#selMonth").val(),10);
 
-  $("#supremaTitle").text(`직전 6개월 적용환율 (기준: ${baseY}-${("0"+baseM).slice(-2)} / 최근월이 위)`);
+  $("#supremaTitle").text(`최근 6개월 적용환율 (기준: ${year}-${("0"+month).slice(-2)}, 최근월이 위)`);
 
-  const list = buildSupremaLast6Months(baseY, baseM);
+  const list = buildSupremaLast6Months(year, month);
   renderSupremaTable(list);
 
-  const latest = list[0]; // 전월(가장 최근 표시월)
+  const latest = list[0];
   if(latest && latest.wonka != null){
     $("#resWonka").text(fNum(latest.wonka) + " 원");
     $("#resPanka").text(fNum(latest.panka) + " 원");
@@ -554,8 +597,7 @@ $(function(){
   const today = new Date();
   $("#dateInput").val(today.toISOString().split('T')[0]);
 
-  // 연도 넉넉히
-  for(let y=today.getFullYear()+1; y>=today.getFullYear()-3; y--) {
+  for(let y=today.getFullYear()+1; y>=today.getFullYear()-2; y--) {
     $("#selYear").append(`<option value="${y}">${y}년</option>`);
   }
   for(let m=1; m<=12; m++) {
@@ -567,12 +609,7 @@ $(function(){
 
   $("#btnSearch").on("click", search);
   $("#btnExcel").on("click", downloadExcel);
-
-  // 슈프리마 계산 버튼: 계산 전에 필요한 데이터 범위까지 다시 조회하도록
-  $("#btnCalc").on("click", function(){
-    // 기준월을 바꾸고 계산할 때도, 해당 기준에 맞는 fetch 범위로 search 후 calculateSuprema
-    search();
-  });
+  $("#btnCalc").on("click", calculateSuprema);
 
   $("#chartCurrency").on("change", () =>
     updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val())
@@ -581,13 +618,6 @@ $(function(){
   $("#dateInput").on("change", function(){
     syncSupremaSelectorToDateInput();
     search();
-  });
-
-  // 기준월(셀렉트) 바꾸면 표 제목만 즉시 바꿔주고, 실제 계산/표 갱신은 "계산하기" 또는 "조회"로
-  $("#selYear, #selMonth").on("change", function(){
-    const by = parseInt($("#selYear").val(),10);
-    const bm = parseInt($("#selMonth").val(),10);
-    $("#supremaTitle").text(`직전 6개월 적용환율 (기준: ${by}-${("0"+bm).slice(-2)} / 최근월이 위)`);
   });
 
   syncSupremaSelectorToDateInput();
