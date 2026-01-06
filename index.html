@@ -608,11 +608,13 @@ $(function(){
 
   $("#btnSearch").on("click", search);
   $("#btnExcel").on("click", downloadExcel);
-  $("#btnCalc").on("click", calculateSuprema);
 
   $("#chartCurrency").on("change", () =>
     updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val())
-  );
+                         // ✅ 연/월 바꾸면 즉시 자동 계산
+$("#selYear, #selMonth").on("change", function(){
+  calculateSuprema();
+});
 
   $("#dateInput").on("change", function(){
     syncSupremaSelectorToDateInput();
@@ -625,6 +627,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
