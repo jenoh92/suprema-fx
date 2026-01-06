@@ -28,6 +28,7 @@ body{ font-family:'Pretendard', sans-serif; background:var(--bg); margin:0; colo
 .top-nav{ display:flex; align-items:center; gap:12px; padding: 0 10px; }
 input[type="date"], select { padding:7px 10px; border-radius:6px; border:1px solid #ccc; font-size:15px; outline: none; }
 button{ background:var(--burgundy); color:#fff; border:none; padding:9px 20px; border-radius:6px; cursor:pointer; font-weight:700; font-size:15px; }
+button:disabled{ opacity:0.6; cursor:not-allowed; }
 
 .card{ background:var(--card); border-radius:14px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.08); border:1px solid var(--border); }
 
@@ -100,10 +101,53 @@ td{ padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; 
   color:var(--burgundy);
   margin-bottom: 10px;
 }
+
+/* ✅ 로딩 오버레이 */
+.loading-overlay{
+  position:fixed;
+  top:0; left:0;
+  width:100vw; height:100vh;
+  background:rgba(255,255,255,0.72);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:9999;
+}
+.loading-box{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.12);
+  padding:18px 22px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.spinner{
+  width:18px; height:18px;
+  border:3px solid #ddd;
+  border-top-color: var(--burgundy);
+  border-radius:50%;
+  animation:spin 0.85s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg);} }
+.loading-text{
+  font-weight:900;
+  color:#444;
+  font-size:14px;
+}
 </style>
 </head>
 
 <body>
+  <!-- ✅ 로딩 오버레이 -->
+  <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div class="loading-text">데이터 로딩 중…</div>
+    </div>
+  </div>
+
   <div class="header">
     <img src="Suprema_logo_basic.jpg" alt="Logo">
     <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
@@ -254,6 +298,17 @@ function parseDateInput(val){
   return null;
 }
 
+/* ✅ 로딩 표시/해제 */
+function setLoading(on){
+  if(on){
+    $("#loadingOverlay").css("display","flex").attr("aria-hidden","false");
+    $("#btnSearch,#btnExcel,#dateInput,#chartCurrency").prop("disabled", true);
+  }else{
+    $("#loadingOverlay").hide().attr("aria-hidden","true");
+    $("#btnSearch,#btnExcel,#dateInput,#chartCurrency").prop("disabled", false);
+  }
+}
+
 function findLastIndexLE(cRowsSorted, targetYmd){
   let lo = 0, hi = cRowsSorted.length - 1, ans = -1;
   while(lo <= hi){
@@ -304,8 +359,7 @@ function buildSupremaFrom202504(baseYear, baseMonth){
   const list = [];
   if(!usdRows.length) return list;
 
-  const startY = 2025, startM = 4;
-  const months = listMonthsFrom(startY, startM, baseYear, baseMonth);
+  const months = listMonthsFrom(2025, 4, baseYear, baseMonth);
 
   months.forEach(({y, m})=>{
     const prevMonthStart = toYmd(new Date(y, m-2, 1));
@@ -321,7 +375,7 @@ function buildSupremaFrom202504(baseYear, baseMonth){
     list.push({ ym, ymLabel: ymToLabel(ym), pavg, m3avg, wonka, panka });
   });
 
-  return list.reverse(); // 최근월이 위
+  return list.reverse();
 }
 
 function renderSupremaTable(list){
@@ -494,14 +548,20 @@ function search(){
     return;
   }
 
-  // ✅ 2025-04부터 표를 만들 거라서, 평균 계산까지 안정적으로 하려면 최소 2025-01-01부터는 가져오는 게 안전
+  // 2025-04부터 표를 만들 거라서, 평균 계산 안정적으로 2025-01-01부터 fetch
   const startForFetch = "20250101";
-
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
   const cachedData = sessionStorage.getItem(cacheKey);
+
+  setLoading(true);
+
   if(cachedData) {
-    globalRows = JSON.parse(cachedData);
-    processResult(p);
+    // 캐시일 때도 로딩감을 주기 위해 짧게 보여줌
+    setTimeout(() => {
+      globalRows = JSON.parse(cachedData);
+      processResult(p);
+      setLoading(false);
+    }, 150);
     return;
   }
 
@@ -511,13 +571,16 @@ function search(){
     success: function(data){
       globalRows = data?.row || data?.StatisticSearch?.row || [];
       if(!globalRows.length) {
+        setLoading(false);
         alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
         return;
       }
       sessionStorage.setItem(cacheKey, JSON.stringify(globalRows));
       processResult(p);
+      setLoading(false);
     },
     error: function(){
+      setLoading(false);
       alert("백엔드 호출에 실패했습니다. BACKEND 주소/권한을 확인해주세요.");
     }
   });
@@ -545,6 +608,8 @@ function downloadExcel(){
   const list = buildSupremaFrom202504(p.y, p.m);
 
   const aoa = [["월","전월 평균","직전 3개월 평균","원가","판가"]];
+
+  // 엑셀은 오래된 달 → 최신 달 순서가 보기 편해서 reverse()로 저장
   list.slice().reverse().forEach(r=>{
     aoa.push([
       r.ymLabel,
@@ -604,6 +669,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
