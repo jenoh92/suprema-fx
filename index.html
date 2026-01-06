@@ -567,6 +567,14 @@ function search(){
     dataType: "jsonp",
     success: function(data){
       globalRows = data?.row || data?.StatisticSearch?.row || [];
+      // ✅ TIME / DATA_VALUE 정규화 (2025-12가 안 잡히는 문제 방지)
+globalRows = (globalRows || []).map(r => {
+  const t = String(r.TIME ?? "").trim().replace(/-/g, ""); // 2025-12-31 → 20251231
+  const v = String(r.DATA_VALUE ?? "").trim();
+  const item = String(r.ITEM_NAME1 ?? "").trim();
+  return { ...r, TIME: t, DATA_VALUE: v, ITEM_NAME1: item };
+}).filter(r => /^\d{8}$/.test(r.TIME));
+
       if(!globalRows.length) {
         setLoading(false);
         alert("데이터가 없습니다. BACKEND 응답을 확인해주세요.");
@@ -664,6 +672,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
