@@ -44,12 +44,12 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
 .chart-card { display: flex; flex-direction: column; min-height: 450px; }
 .chart-container { flex: 1; position: relative; padding-top: 15px; }
 
-.suprema-footer { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; }
-.suprema-calc-box { display: flex; gap: 12px; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 12px; }
-.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 25px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
+.suprema-footer { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: center; }
+.res-card { display: flex; justify-content: space-around; background: #fdfdfd; padding: 22px 25px; border-radius: 12px; border: 1px solid var(--burgundy-light); }
 .res-item { text-align: center; flex: 1; }
-.res-label { font-size: 15px; font-weight: 800; color: #666; display: block; margin-bottom: 8px; line-height: 1.2; }
-.res-val { font-size: 32px; font-weight: 900; color: #333; }
+.res-label { font-size: 16px; font-weight: 900; color: #444; display: block; margin-bottom: 6px; line-height: 1.2; }
+.res-note { font-size: 12px; font-weight: 700; color:#888; display:block; margin-top: 6px; }
+.res-val { font-size: 34px; font-weight: 900; color: #333; }
 
 .loading-overlay { position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; align-items:center; justify-content:center; z-index:10; font-weight: bold; }
 
@@ -83,71 +83,65 @@ td{ padding:16px 10px; border-bottom:1px solid var(--border); text-align:center;
       <span id="subInfo" style="font-size:14px; color:#666; margin-left: auto;"></span>
     </div>
 
-    <!-- ✅ 슈프리마 적용환율 상세 -->
+    <!-- ✅ 슈프리마 적용환율 상세 (조작 UI 없음: 조회일 기준 자동 계산) -->
     <div class="card" style="padding: 20px 30px;">
-      <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 15px;">※ 슈프리마 적용환율 상세 (USD)</div>
+      <div style="font-size: 18px; font-weight: 900; color: var(--burgundy); margin-bottom: 10px;">※ 슈프리마 적용환율 상세 (USD)</div>
+
+      <div id="supremaBasis" style="font-size: 13px; color:#666; font-weight:700; margin-bottom: 12px;">
+        기준: -
+      </div>
 
       <div class="suprema-footer">
-        <div class="suprema-calc-box">
-          <select id="selYear"></select>
-          <select id="selMonth"></select>
-        </div>
-
         <div class="res-card">
           <div class="res-item">
-            <span class="res-label">
-              최종 원가 MAX<br>
-              <span style="font-size:12px; font-weight:500; color:#888;">
-                (전월 평균, 직전 3개월 평균)
-              </span>
-            </span>
+            <span class="res-label">원가</span>
             <span id="resWonka" class="res-val">-</span>
+            <!-- 설명(주석) 아래로 분리 -->
+            <span class="res-note">(전월 평균과 직전 3개월 평균의 큰 값)</span>
           </div>
 
           <div style="width: 2px; background: #eee; margin: 0 40px;"></div>
 
           <div class="res-item">
-            <span class="res-label">
-              최종 판가<br>
-              <span style="font-size:12px; font-weight:500; color:#888;">
-                (최종 원가 -50원)
-              </span>
-            </span>
+            <span class="res-label">판가</span>
             <span id="resPanka" class="res-val">-</span>
+            <!-- 설명(주석) 아래로 분리 -->
+            <span class="res-note">(원가 - 50원)</span>
           </div>
         </div>
-      </div>
 
-      <!-- ✅ 최근 6개월 누적 리스트 (최근월이 위) -->
-      <div style="margin-top:18px;">
-        <div id="supremaTitle" style="font-size:14px; font-weight:800; color:#666; margin-bottom:10px;">
-          최근 6개월 적용환율 (최근월이 위)
+        <!-- ✅ 최근 6개월 누적 리스트 (최근월이 위) -->
+        <div style="margin-top: 6px;">
+          <div id="supremaTitle" style="font-size:14px; font-weight:800; color:#666; margin-bottom:10px;">
+            최근 6개월 적용환율 (최근월이 위)
+          </div>
+
+          <div class="table-wrap suprema-scroll">
+            <table id="supremaTable">
+              <thead>
+                <tr>
+                  <th style="width:120px;">월</th>
+                  <th>전월 평균</th>
+                  <th>직전 3개월 평균</th>
+                  <th>
+                    원가<br>
+                    <span style="font-size:12px; font-weight:600; color:#7a7a7a;">
+                      (전월 평균과 직전 3개월 평균의 큰 값)
+                    </span>
+                  </th>
+                  <th>
+                    판가<br>
+                    <span style="font-size:12px; font-weight:600; color:#7a7a7a;">
+                      (원가 - 50원)
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="supremaTbody"></tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="table-wrap suprema-scroll">
-          <table id="supremaTable">
-            <thead>
-              <tr>
-                <th style="width:120px;">월</th>
-                <th>전월 평균</th>
-                <th>직전 3개월 평균</th>
-                <th>
-                  최종 원가 MAX<br>
-                  <span style="font-size:12px; font-weight:500;">
-                    (전월 평균, 직전 3개월 평균)
-                  </span>
-                </th>
-                <th>
-                  최종 판가<br>
-                  <span style="font-size:12px; font-weight:500;">
-                    (최종 원가 -50원)
-                  </span>
-                </th>
-              </tr>
-            </thead>
-            <tbody id="supremaTbody"></tbody>
-          </table>
-        </div>
       </div>
     </div>
 
@@ -195,6 +189,7 @@ const CURRENCIES = [
 ];
 
 let globalRows = [];
+
 const fNum = (x) => x == null ? "-" : Number(x).toLocaleString("ko-KR",{minimumFractionDigits:2, maximumFractionDigits:2});
 const pNum = (x) => {
   if(x == null) return null;
@@ -246,10 +241,10 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
 
 /* =========================
    ✅ 슈프리마: 최근 6개월 누적 (최근월이 위)
-   ✅ 최종원가/판가 규칙 확정:
-      - 최종원가 = MAX(전월평균, 직전3개월평균)
+   ✅ 규칙:
+      - 원가 = MAX(전월평균, 직전3개월평균)
       - 둘 중 하나만 있으면 그 값
-      - 최종판가 = 최종원가 - 50
+      - 판가 = 원가 - 50
 ========================= */
 function getLastNMonths(year, month, n){
   const out = [];
@@ -273,7 +268,7 @@ function computeWonkaPanka(pavg, m3avg){
   return { wonka, panka };
 }
 
-function buildSupremaLast6Months(year, month){
+function buildSupremaLast6Months(baseYear, baseMonth){
   const usdRows = globalRows
     .filter(r=>String(r.ITEM_NAME1 || "").includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
@@ -281,7 +276,7 @@ function buildSupremaLast6Months(year, month){
   const list = [];
   if(!usdRows.length) return list;
 
-  const months = getLastNMonths(year, month, 6); // 오래된->최신
+  const months = getLastNMonths(baseYear, baseMonth, 6); // 오래된->최신
 
   months.forEach(({y, m})=>{
     const prevMonthStart = toYmd(new Date(y, m-2, 1)); // (m-1)월 1일
@@ -299,7 +294,9 @@ function buildSupremaLast6Months(year, month){
     list.push({
       ym,
       ymLabel: ymToLabel(ym),
-      pavg, m3avg, wonka, panka
+      pavg, m3avg,
+      wonka, // 원가
+      panka  // 판가
     });
   });
 
@@ -328,8 +325,34 @@ function renderSupremaTable(list){
 }
 
 /* =========================
+   ✅ 슈프리마 자동 계산 (조회일 기준)
+========================= */
+function calculateSuprema(){
+  const d = $("#dateInput").val();
+  if(!d) return;
+
+  const y = parseInt(d.slice(0,4),10);
+  const m = parseInt(d.slice(5,7),10);
+
+  $("#supremaBasis").text(`기준: ${y}-${("0"+m).slice(-2)} (조회일 기준 자동 계산)`);
+  $("#supremaTitle").text(`최근 6개월 적용환율 (기준: ${y}-${("0"+m).slice(-2)}, 최근월이 위)`);
+
+  const list = buildSupremaLast6Months(y, m);
+  renderSupremaTable(list);
+
+  const latest = list[0];
+  if(latest && latest.wonka != null){
+    $("#resWonka").text(fNum(latest.wonka) + " 원");
+    $("#resPanka").text(fNum(latest.panka) + " 원");
+  } else {
+    $("#resWonka").text("-");
+    $("#resPanka").text("-");
+  }
+}
+
+/* =========================
    ✅ 메인 조회: 전년도 넘어가도 전월/직전3개월/최근6개월(슈프리마) 계산되도록
-   - 선택월 기준 "최소 9개월 전 1일"부터 fetch
+   - 조회일의 "월"을 기준으로: 최소 9개월 전 1일(fetch)
 ========================= */
 function search(){
   const d = $("#dateInput").val();
@@ -338,13 +361,13 @@ function search(){
   const y = parseInt(ymd.slice(0,4),10);
   const m = parseInt(ymd.slice(4,6),10);
 
-  // 최근6개월 표 + 그 안의 직전3개월 평균까지 커버: 선택월 기준 9개월 전 1일로 안전하게 확장
+  // 최근6개월 표 + 그 안의 직전3개월 평균까지 커버: 조회월 기준 9개월 전 1일로 안전하게 확장
   const needStartForSuprema = toYmd(new Date(y, m-10, 1));
   const yearStart = y + "0102";
 
   const startForFetch = (needStartForSuprema < yearStart) ? needStartForSuprema : yearStart;
-  const cacheKey = `rate_data_${startForFetch}_${ymd}`;
 
+  const cacheKey = `rate_data_${startForFetch}_${ymd}`;
   const cachedData = sessionStorage.getItem(cacheKey);
   if(cachedData) {
     globalRows = JSON.parse(cachedData);
@@ -505,30 +528,28 @@ function updateChart(rows, ymd, label){
 }
 
 /* =========================
-   ✅ 엑셀 내려받기 개선:
-   - 슈프리마(최근6개월) 시트는 DOM 복사가 아니라 "계산된 리스트"를 다시 만들어 숫자로 저장
-   - 최종원가/판가 누적 포함 (월별 6줄)
+   ✅ 엑셀 내려받기:
+   - 메인 테이블 + 슈프리마(최근6개월) "계산값을 숫자로" 생성하여 누적 저장
 ========================= */
 function downloadExcel(){
   const wb = XLSX.utils.book_new();
 
-  // 1) 메인 테이블(표시용 테이블 그대로)
+  // 1) 메인 테이블
   const table = document.getElementById("mainTable");
   const clone = table.cloneNode(true);
   $(clone).find(".rate-diff").remove();
   const wsMain = XLSX.utils.table_to_sheet(clone);
   XLSX.utils.book_append_sheet(wb, wsMain, "환율데이터");
 
-  // 2) 슈프리마(최근 6개월) - 계산값을 숫자로 생성
-  const year = parseInt($("#selYear").val(),10);
-  const month = parseInt($("#selMonth").val(),10);
-  const list = buildSupremaLast6Months(year, month);
+  // 2) 슈프리마(최근6개월) - 조회일 기준으로 계산
+  const d = $("#dateInput").val();
+  const y = parseInt(d.slice(0,4),10);
+  const m = parseInt(d.slice(5,7),10);
+  const list = buildSupremaLast6Months(y, m);
 
   const aoa = [
-    ["월", "전월 평균", "직전 3개월 평균", "최종 원가(MAX)", "최종 판가(원가-50)"]
+    ["월", "전월 평균", "직전 3개월 평균", "원가", "판가"]
   ];
-
-  // 엑셀은 최신월이 위로 (화면과 동일)
   list.forEach(r=>{
     aoa.push([
       r.ymLabel,
@@ -541,67 +562,26 @@ function downloadExcel(){
 
   const wsSuprema = XLSX.utils.aoa_to_sheet(aoa);
 
-  // 숫자 서식(2자리 소수) 적용
+  // 숫자 서식(2자리 소수)
   const range = XLSX.utils.decode_range(wsSuprema["!ref"]);
   for(let R=1; R<=range.e.r; R++){
     for(let C=1; C<=4; C++){
-      const cellAddr = XLSX.utils.encode_cell({r:R, c:C});
-      const cell = wsSuprema[cellAddr];
+      const addr = XLSX.utils.encode_cell({r:R, c:C});
+      const cell = wsSuprema[addr];
       if(cell && typeof cell.v === "number"){
         cell.z = "#,##0.00";
       }
     }
   }
+
   XLSX.utils.book_append_sheet(wb, wsSuprema, "슈프리마(최근6개월)");
 
-  XLSX.writeFile(wb, `Suprema_Rate_${$("#dateInput").val()}.xlsx`);
-}
-
-/* =========================
-   ✅ 슈프리마 계산: 최근 6개월 누적 + 최신월 요약
-========================= */
-function calculateSuprema(){
-  const year = parseInt($("#selYear").val(),10);
-  const month = parseInt($("#selMonth").val(),10);
-
-  $("#supremaTitle").text(`최근 6개월 적용환율 (기준: ${year}-${("0"+month).slice(-2)}, 최근월이 위)`);
-
-  const list = buildSupremaLast6Months(year, month);
-  renderSupremaTable(list);
-
-  const latest = list[0];
-  if(latest && latest.wonka != null){
-    $("#resWonka").text(fNum(latest.wonka) + " 원");
-    $("#resPanka").text(fNum(latest.panka) + " 원");
-  } else {
-    $("#resWonka").text("-");
-    $("#resPanka").text("-");
-  }
-}
-
-function syncSupremaSelectorToDateInput(){
-  const d = $("#dateInput").val();
-  if(!d) return;
-  const y = parseInt(d.slice(0,4),10);
-  const m = parseInt(d.slice(5,7),10);
-
-  if($("#selYear option[value='"+y+"']").length === 0){
-    $("#selYear").prepend(`<option value="${y}">${y}년</option>`);
-  }
-  $("#selYear").val(String(y));
-  $("#selMonth").val(String(m));
+  XLSX.writeFile(wb, `Suprema_Rate_${d}.xlsx`);
 }
 
 $(function(){
   const today = new Date();
   $("#dateInput").val(today.toISOString().split('T')[0]);
-
-  for(let y=today.getFullYear()+1; y>=today.getFullYear()-2; y--) {
-    $("#selYear").append(`<option value="${y}">${y}년</option>`);
-  }
-  for(let m=1; m<=12; m++) {
-    $("#selMonth").append(`<option value="${m}" ${m==today.getMonth()+1?'selected':''}>${m}월</option>`);
-  }
 
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
   $("#chartCurrency").val("USD (미국 달러)");
@@ -611,22 +591,19 @@ $(function(){
 
   $("#chartCurrency").on("change", () =>
     updateChart(globalRows, $("#dateInput").val().replace(/-/g,""), $("#chartCurrency").val())
-                         // ✅ 연/월 바꾸면 즉시 자동 계산
-$("#selYear, #selMonth").on("change", function(){
-  calculateSuprema();
-});
+  );
 
+  // 조회일 변경 시 자동 조회
   $("#dateInput").on("change", function(){
-    syncSupremaSelectorToDateInput();
     search();
   });
 
-  syncSupremaSelectorToDateInput();
   search();
 });
 </script>
 </body>
 </html>
+
 
 
 
