@@ -150,7 +150,7 @@ td{
 }
 .table-footnote .dot{ color:var(--burgundy); font-weight:900; margin-right:6px; }
 
-/* ===== 오른쪽(요약 + 그래프) ===== */
+/* ===== 오른쪽 ===== */
 .right-body{
   display:flex;
   flex-direction:column;
@@ -180,7 +180,7 @@ td{
 }
 .small-muted{ font-size:12px; color:#777; font-weight:800; }
 
-/* ✅ 전체 통화 요약: 스크롤 없이 한 번에 표시 + 글자 조금 키움 */
+/* 요약표(스크롤 없이) + 글자 조금 키움 + 가운데정렬 */
 .summary-zone{
   border:1px solid var(--border);
   border-radius:12px;
@@ -188,11 +188,7 @@ td{
   background:#fff;
   margin-bottom:8px;
 }
-.summary-scroll{
-  height:auto;
-  max-height:none;
-  overflow:visible;
-}
+.summary-scroll{ overflow:visible; }
 #allSummaryTable{ width:100%; border-collapse:collapse; table-layout:fixed; }
 #allSummaryTable th{
   font-size:12px;
@@ -204,11 +200,11 @@ td{
 }
 #allSummaryTable th, #allSummaryTable td{
   white-space:nowrap;
-  text-align:center; /* ✅ 통화 포함 모두 가운데 */
+  text-align:center;
 }
-.bold{font-weight:900;}
+.bold{ font-weight:900; }
 
-/* ✅ 그래프: 높이 줄여서 여백 줄이기 */
+/* 차트 높이 줄임 */
 .chart-card{
   flex:0 0 auto;
   display:flex;
@@ -229,7 +225,7 @@ td{
   color:#666;
 }
 .chart-container{
-  height:220px; /* ✅ 더 줄임 (원하면 200~240 사이 조절) */
+  height:220px;
   position:relative;
 }
 #rateChart{ width:100%; height:100%; }
@@ -263,7 +259,7 @@ td{
 @keyframes spin{ to{ transform:rotate(360deg);} }
 .loading-text{ font-weight:900; color:#444; font-size:14px; }
 
-/* ✅ 전일 대비 화살표 배지 */
+/* 전일 대비 화살표 배지 */
 .delta{
   display:inline-flex;
   align-items:center;
@@ -276,22 +272,10 @@ td{
   border:1px solid rgba(0,0,0,0.08);
   vertical-align:middle;
 }
-.delta.up{
-  color:#b0162f;
-  background:rgba(161,42,68,0.10);
-}
-.delta.down{
-  color:#1f5fbf;
-  background:rgba(31,95,191,0.10);
-}
-.delta.flat{
-  color:#777;
-  background:rgba(120,120,120,0.10);
-}
-.delta .arrow{
-  font-size:12px;
-  line-height:1;
-}
+.delta.up{ color:#b0162f; background:rgba(161,42,68,0.10); }
+.delta.down{ color:#1f5fbf; background:rgba(31,95,191,0.10); }
+.delta.flat{ color:#777; background:rgba(120,120,120,0.10); }
+.delta .arrow{ font-size:12px; line-height:1; }
 </style>
 </head>
 
@@ -319,8 +303,7 @@ td{
     </div>
 
     <div class="two-col">
-
-      <!-- ===== LEFT ===== -->
+      <!-- LEFT -->
       <div class="card">
         <div class="section-title">※ 슈프리마 적용환율 상세 (USD)</div>
 
@@ -361,10 +344,9 @@ td{
         </div>
       </div>
 
-      <!-- ===== RIGHT ===== -->
+      <!-- RIGHT -->
       <div class="card">
         <div class="right-body">
-
           <div class="controls-row">
             <div class="left">
               <div class="section-title" style="margin:0;">전체 통화 요약</div>
@@ -407,16 +389,17 @@ td{
               <canvas id="rateChart"></canvas>
             </div>
           </div>
-
         </div>
       </div>
-
     </div>
+
   </div>
 
 <script>
-/** ✅ 새 백엔드 주소 */
 const BACKEND = "https://script.google.com/macros/s/AKfycbzEKPtHbxnyk71AgYSY0qDhk6vff8pakZT4V3FGjioifdWTk2lQYmpvXoiQyqUsSHM/exec";
+
+/* ✅ 최소 조회 시작일(요구사항: 2025년 1/2부터 평균 계산해야 함) */
+const MIN_START = "20250101";
 
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -449,12 +432,6 @@ function parseDateInput(val){
     const m = parseInt(s.slice(5,7),10);
     const d = parseInt(s.slice(8,10),10);
     return { y, m, d, ymd: s.replace(/-/g,""), iso: s };
-  }
-  if(/^\d{8}$/.test(s)){
-    const y = parseInt(s.slice(0,4),10);
-    const m = parseInt(s.slice(4,6),10);
-    const d = parseInt(s.slice(6,8),10);
-    return { y, m, d, ymd: s, iso: `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}` };
   }
   return null;
 }
@@ -496,7 +473,6 @@ function calcAvg(cRowsSorted, s, e){
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
 }
 
-/* ✅ 캐시 용량 초과 방지 */
 function safeSessionSet(key, obj){
   try{
     const s = JSON.stringify(obj);
@@ -508,7 +484,7 @@ function safeSessionSet(key, obj){
   }
 }
 
-/* ✅ 전일 대비 화살표 */
+/* 전일 대비 화살표 */
 function formatDeltaArrow(delta){
   if(delta == null) return "";
   if(delta > 0){
@@ -520,7 +496,7 @@ function formatDeltaArrow(delta){
   return `<span class="delta flat"><span class="arrow">–</span>0.00</span>`;
 }
 
-/* ===== 슈프리마(USD) : 표시 월은 2025-07부터 (4~6월은 숨김) ===== */
+/* ===== 슈프리마(USD) : 2025-07부터 표시(4~6월 숨김) ===== */
 function listMonthsFrom(startY, startM, endY, endM){
   const out = [];
   let y = startY, m = startM;
@@ -546,7 +522,7 @@ function buildSupremaFrom202507(baseYear, baseMonth){
 
   if(!usdRows.length) return [];
 
-  const months = listMonthsFrom(2025, 7, baseYear, baseMonth); // ✅ 7월부터 표시
+  const months = listMonthsFrom(2025, 7, baseYear, baseMonth);
   const list = [];
 
   months.forEach(({y, m})=>{
@@ -634,7 +610,7 @@ function buildAllCurrencySummary(ymd){
     const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
     const currTime = idx !== -1 ? cRows[idx].TIME : null;
 
-    // ✅ 전일(직전 영업일) 값: idx-1 (데이터는 영업일만 존재)
+    // 전일(직전 영업일) 데이터: idx-1
     const prev = (idx > 0) ? pNum(cRows[idx-1].DATA_VALUE) : null;
     const currDelta = (curr != null && prev != null) ? (curr - prev) : null;
 
@@ -676,7 +652,7 @@ function renderAllCurrencySummary(ymd, iso){
   });
 }
 
-/* ===== 차트 (그라데이션 + 가로축 선 제거) ===== */
+/* ===== 차트 (그라데이션 + X축 격자/축선 제거) ===== */
 function updateChart(ymd, label, monthsBack){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
@@ -698,7 +674,6 @@ function updateChart(ymd, label, monthsBack){
   dates.forEach((d,i)=>{ monthEnds[d.slice(0,6)] = i; });
   const showIndices = new Set(Object.values(monthEnds));
 
-  // ✅ 그라데이션 (위→아래)
   const grad = ctx.createLinearGradient(0, 0, 0, canvas.height || 220);
   grad.addColorStop(0, "rgba(161,42,68,0.30)");
   grad.addColorStop(1, "rgba(161,42,68,0.00)");
@@ -725,7 +700,7 @@ function updateChart(ymd, label, monthsBack){
       animation:{ duration:250 },
       scales:{
         x:{
-          grid:{ display:false, drawBorder:false },   // ✅ 가로축 선/격자 제거
+          grid:{ display:false, drawBorder:false },
           border:{ display:false },
           ticks:{
             autoSkip:false,
@@ -750,13 +725,19 @@ function processResult(p){
   updateChart(p.ymd, $("#chartCurrency").val(), $("#chartRange").val());
 }
 
+/* ✅ 핵심 수정: 2026년을 조회하면 2025년 데이터도 같이 가져와야 함 */
+function getStartForFetch(ymd){
+  // 최소 2025-01-01은 항상 포함 (요구사항: 2025년 1/2부터 평균)
+  // 그리고 조회일이 더 과거면 그 과거로 내려감
+  return (ymd < MIN_START) ? (ymd.slice(0,4) + "0101") : MIN_START;
+}
+
 /* ===== 조회 ===== */
 function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
-  // ✅ 평균 계산 때문에: 조회 연도 0102부터(휴일이면 내부에서 보정) 가져오되, 우선 0101~로 요청
-  const startForFetch = p.ymd.slice(0,4) + "0101";
+  const startForFetch = getStartForFetch(p.ymd);       // ✅ 수정됨
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
 
   setLoading(true);
@@ -878,3 +859,4 @@ $(function(){
 </script>
 </body>
 </html>
+
