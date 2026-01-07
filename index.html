@@ -157,7 +157,6 @@ td{
   height:100%;
   min-height:0;
 }
-
 .controls-row{
   display:flex;
   align-items:center;
@@ -180,7 +179,7 @@ td{
 }
 .small-muted{ font-size:12px; color:#777; font-weight:800; }
 
-/* ✅ 전체 통화 요약: 스크롤 없이 한 번에 표시 */
+/* ✅ 전체 통화 요약(스크롤 없이) + 글자 키움 + 통화 가운데정렬 */
 .summary-zone{
   border:1px solid var(--border);
   border-radius:12px;
@@ -192,18 +191,17 @@ td{
 
 #allSummaryTable{ width:100%; border-collapse:collapse; table-layout:fixed; }
 #allSummaryTable th{
-  font-size:11px;
-  padding:8px 6px;
+  font-size:12px;          /* 🔺 기존 11px → 12px */
+  padding:9px 7px;
 }
 #allSummaryTable td{
-  font-size:11px;
-  padding:7px 6px;
+  font-size:12px;          /* 🔺 기존 11px → 12px */
+  padding:8px 7px;
 }
-#allSummaryTable th, #allSummaryTable td{ white-space:nowrap; }
-td.left{text-align:left;}
+#allSummaryTable th, #allSummaryTable td{ white-space:nowrap; text-align:center; }
 td.bold{font-weight:900;}
 
-/* ✅ 그래프: 높이 줄여서 한 페이지 */
+/* ✅ 그래프: 그라데이션 + x축(가로축) 선/그리드 제거 */
 .chart-card{
   flex:0 0 auto;
   display:flex;
@@ -223,7 +221,7 @@ td.bold{font-weight:900;}
   color:#666;
 }
 .chart-container{
-  height:220px; /* ✅ 그래프 더 줄임 (원하면 200~260 조절) */
+  height:220px;
   position:relative;
 }
 #rateChart{ width:100%; height:100%; }
@@ -491,19 +489,24 @@ function computeWonkaPanka(pavg, m3avg){
   const panka = (wonka != null) ? (wonka - 50) : null;
   return { wonka, panka };
 }
-function buildSupremaFrom202504(baseYear, baseMonth){
+
+/** ✅ (요청) 4/5/6월은 표에서 숨김: 2025-07부터만 표시 */
+function buildSupremaFrom202507(baseYear, baseMonth){
   const usdRows = globalRows
     .filter(r => String(r.ITEM_NAME1 || "").includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
-
   if(!usdRows.length) return [];
 
-  const months = listMonthsFrom(2025, 4, baseYear, baseMonth);
+  // 2025-07부터 기준월까지
+  const months = listMonthsFrom(2025, 7, baseYear, baseMonth);
   const list = [];
 
   months.forEach(({y, m})=>{
+    // 전월 평균
     const prevMonthStart = toYmd(new Date(y, m-2, 1));
     const prevMonthEnd   = toYmd(new Date(y, m-1, 0));
+
+    // 직전 3개월 평균(당월 제외) → 예: 7월이면 4~6월 평균
     const m3Start = toYmd(new Date(y, m-4, 1));
     const m3End   = prevMonthEnd;
 
@@ -515,8 +518,9 @@ function buildSupremaFrom202504(baseYear, baseMonth){
     list.push({ ymLabel: ymToLabel(ym), pavg, m3avg, wonka, panka });
   });
 
-  return list.reverse();
+  return list.reverse(); // 최근 월이 위로
 }
+
 function renderSupremaTable(list){
   $("#supremaTbody").empty();
   if(!list.length){
@@ -539,7 +543,7 @@ function calculateSuprema(){
   const p = parseDateInput($("#dateInput").val());
   if(!p) return;
 
-  const list = buildSupremaFrom202504(p.y, p.m);
+  const list = buildSupremaFrom202507(p.y, p.m);
   renderSupremaTable(list);
 
   const latest = list[0];
@@ -562,7 +566,7 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
   return (first && first.TIME) ? first.TIME : base;
 }
 
-/* ===== 전체 통화 요약 (최초 고시환율 열 제거) ===== */
+/* ===== 전체 통화 요약 ===== */
 function buildAllCurrencySummary(ymd){
   const year = ymd.slice(0,4);
   const yy = parseInt(ymd.slice(0,4),10);
@@ -604,11 +608,10 @@ function renderAllCurrencySummary(ymd, iso){
   $("#allSummaryTbody").empty();
 
   const list = buildAllCurrencySummary(ymd);
-
   list.forEach(r=>{
     $("#allSummaryTbody").append(`
       <tr>
-        <td class="left bold">${r.label}</td>
+        <td class="bold">${r.label}</td>
         <td>${r.curr == null ? "-" : (fNum(r.curr) + " 원")}</td>
         <td>${r.yavg == null ? "-" : (fNum(r.yavg) + " 원")}</td>
         <td>${r.pavg == null ? "-" : (fNum(r.pavg) + " 원")}</td>
@@ -618,7 +621,7 @@ function renderAllCurrencySummary(ymd, iso){
   });
 }
 
-/* ===== 차트 (통화 + 기간 선택) ===== */
+/* ===== 차트 (그라데이션 + x축 그리드/선 제거) ===== */
 function updateChart(ymd, label, monthsBack){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
@@ -632,7 +635,13 @@ function updateChart(ymd, label, monthsBack){
     .filter(r => String(r.ITEM_NAME1 || "").includes(key) && r.TIME >= start && r.TIME <= ymd)
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
-  const ctx = document.getElementById("rateChart").getContext("2d");
+  const canvas = document.getElementById("rateChart");
+  const ctx = canvas.getContext("2d");
+
+  // ✅ 그라데이션(위→아래)
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.clientHeight || 220);
+  gradient.addColorStop(0, "rgba(161, 42, 68, 0.35)");
+  gradient.addColorStop(1, "rgba(161, 42, 68, 0)");
 
   const dates = cRows.map(r=>r.TIME);
   const monthEnds = {};
@@ -649,7 +658,8 @@ function updateChart(ymd, label, monthsBack){
         borderColor:"#A12A44",
         borderWidth:3,
         pointRadius:0,
-        fill:false,
+        fill:true,
+        backgroundColor: gradient,
         tension:0.2
       }]
     },
@@ -660,7 +670,8 @@ function updateChart(ymd, label, monthsBack){
       animation:{ duration:250 },
       scales:{
         x:{
-          grid:{ display:false },
+          grid:{ display:false },       // ✅ 가로축 그리드 제거
+          border:{ display:false },     // ✅ 가로축 라인 제거(Chart.js v4)
           ticks:{
             autoSkip:false,
             font:{ size:12, weight:"bold" },
@@ -669,7 +680,11 @@ function updateChart(ymd, label, monthsBack){
             }
           }
         },
-        y:{ grid:{ color:"#f0f0f0" }, ticks:{ font:{ size:12 } } }
+        y:{
+          grid:{ color:"#f0f0f0" },
+          border:{ display:false },     // ✅ 세로축 라인도 깔끔하게
+          ticks:{ font:{ size:12 } }
+        }
       }
     }
   });
@@ -686,7 +701,7 @@ function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
-  // ✅ 핵심: 2025-04부터 표 계산하려면 2025-01~03이 필요 → 2025년 이상이면 20250102부터 고정
+  // ✅ 2025-04부터 계산하려면 2025-01~03이 필요 → 2025년 이상이면 20250102부터
   let startForFetch;
   if (p.y >= 2025) startForFetch = "20250102";
   else startForFetch = `${p.y}0102`;
@@ -755,7 +770,8 @@ function downloadExcel(){
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
   const wb = XLSX.utils.book_new();
-  const list = buildSupremaFrom202504(p.y, p.m);
+  // ✅ 엑셀도 표와 동일하게 2025-07부터만
+  const list = buildSupremaFrom202507(p.y, p.m);
 
   const aoa = [["월","전월 평균","직전 3개월 평균","원가","판가"]];
   list.slice().reverse().forEach(r=>{
