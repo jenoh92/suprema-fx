@@ -381,8 +381,8 @@ td.bold{font-weight:900;}
   </div>
 
 <script>
-/** ✅ 네 백엔드 주소 그대로 */
-const BACKEND = "https://script.google.com/macros/s/AKfycbwy_VgzLTGEoc_Cww9lQ4_44GZHsWRbEKJvYN6SByvXS13qV0LPEYgPjuSWuiJKTEZm/exec";
+/** ✅ 새 백엔드 주소로 교체 */
+const BACKEND = "https://script.google.com/macros/s/AKfycbzEKPtHbxnyk71AgYSY0qDhk6vff8pakZT4V3FGjioifdWTk2lQYmpvXoiQyqUsSHM/exec";
 
 const CURRENCIES = [
   { key: "미국달러", label: "USD (미국 달러)" },
@@ -672,13 +672,9 @@ function updateChart(ymd, label, monthsBack){
 }
 
 function processResult(p){
-  // 왼쪽(슈프리마)
   calculateSuprema();
-
-  // 오른쪽(전체 통화 요약)
   renderAllCurrencySummary(p.ymd, p.iso);
 
-  // 차트
   const label = $("#chartCurrency").val();
   const range = $("#chartRange").val();
   updateChart(p.ymd, label, range);
@@ -719,7 +715,7 @@ function search(){
   $.ajax({
     url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
     dataType: "jsonp",
-    timeout: 15000,
+    timeout: 20000,
     success: function(data){
       try{
         const rows = data?.row || data?.StatisticSearch?.row || [];
@@ -790,10 +786,9 @@ function formatDateLocal(d){
 $(function(){
   $("#dateInput").val(formatDateLocal(new Date()));
 
-  // 차트 통화 선택
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
   $("#chartCurrency").val("USD (미국 달러)");
-  $("#chartRange").val("3"); // ✅ 기본 3개월(네가 마지막에 3 적은 것도 여기 반영)
+  $("#chartRange").val("3");
 
   $("#btnSearch").on("click", search);
   $("#btnExcel").on("click", downloadExcel);
@@ -801,19 +796,14 @@ $(function(){
   $("#chartCurrency, #chartRange").on("change", () => {
     const p = parseDateInput($("#dateInput").val());
     if(!p) return;
-    const label = $("#chartCurrency").val();
-    const range = $("#chartRange").val();
-    updateChart(p.ymd, label, range);
+    updateChart(p.ymd, $("#chartCurrency").val(), $("#chartRange").val());
   });
 
   $("#dateInput").on("change", search);
 
+  // ✅ 레이트리밋 방지: 자동조회는 꺼둠 (원하면 아래 주석 해제)
   search();
 });
 </script>
 </body>
 </html>
-
-
-
-
