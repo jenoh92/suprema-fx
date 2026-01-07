@@ -691,7 +691,7 @@ function updateChart(ymd, label, monthsBack){
         x:{
           display:true,                 // ✅ X축 유지
           grid:{ display:false },       // ✅ x축 방향의 세로 그리드 제거
-          border:{ display:false },     // ✅ x축 기준선(바닥선) 제거
+          border:{ display:true },     // ✅ x축 기준선(바닥선) 제거
           ticks:{
             autoSkip:false,
             font:{ size:12, weight:"bold" },
@@ -844,5 +844,6 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
