@@ -83,13 +83,13 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
   margin-bottom:10px;
 }
 
-/* ✅ 좌/우 레이아웃 */
+/* ✅ 좌/우 레이아웃: 한 화면 기준 */
 .two-col{
   display:grid;
-  grid-template-columns: 0.82fr 1.18fr; /* 왼쪽 줄임 / 오른쪽 늘림 */
+  grid-template-columns: 0.82fr 1.18fr;
   gap:12px;
   align-items:stretch;
-  height: calc(100vh - 140px); /* 한 화면 기준 */
+  height: calc(100vh - 140px);
 }
 
 /* ===== 왼쪽(슈프리마) ===== */
@@ -150,7 +150,7 @@ td{
 }
 .table-footnote .dot{ color:var(--burgundy); font-weight:900; margin-right:6px; }
 
-/* ===== 오른쪽(전체 통화 요약 + 그래프 선택) ===== */
+/* ===== 오른쪽(전체 통화 요약 + 그래프) ===== */
 .right-body{
   display:flex;
   flex-direction:column;
@@ -178,6 +178,7 @@ td{
   border-radius:999px;
   padding:6px 10px;
 }
+.small-muted{ font-size:12px; color:#777; font-weight:800; }
 
 /* ✅ 전체 통화 요약: 스크롤 없이 한 번에 표시 */
 .summary-zone{
@@ -187,11 +188,7 @@ td{
   background:#fff;
   margin-bottom:10px;
 }
-.summary-scroll{
-  height:auto;
-  max-height:none;
-  overflow:visible;
-}
+.summary-scroll{ height:auto; max-height:none; overflow:visible; }
 
 #allSummaryTable{ width:100%; border-collapse:collapse; table-layout:fixed; }
 #allSummaryTable th{
@@ -202,14 +199,11 @@ td{
   font-size:11px;
   padding:7px 6px;
 }
-#allSummaryTable th, #allSummaryTable td{
-  white-space:nowrap;
-}
+#allSummaryTable th, #allSummaryTable td{ white-space:nowrap; }
 td.left{text-align:left;}
 td.bold{font-weight:900;}
-.small-muted{ font-size:12px; color:#777; font-weight:800; }
 
-/* ✅ 그래프: 높이 줄여서 한 페이지에 */
+/* ✅ 그래프: 높이 줄여서 한 페이지 */
 .chart-card{
   flex:0 0 auto;
   display:flex;
@@ -229,7 +223,7 @@ td.bold{font-weight:900;}
   color:#666;
 }
 .chart-container{
-  height:240px; /* 🔥 더 줄이고 싶으면 220~260 조절 */
+  height:220px; /* ✅ 그래프 더 줄임 (원하면 200~260 조절) */
   position:relative;
 }
 #rateChart{ width:100%; height:100%; }
@@ -568,7 +562,7 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
   return (first && first.TIME) ? first.TIME : base;
 }
 
-/* ===== 전체 통화 요약 (최초 고시환율 열 제거 버전) ===== */
+/* ===== 전체 통화 요약 (최초 고시환율 열 제거) ===== */
 function buildAllCurrencySummary(ymd){
   const year = ymd.slice(0,4);
   const yy = parseInt(ymd.slice(0,4),10);
@@ -692,8 +686,11 @@ function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
-  /* ✅ 호출량/속도 개선: 해당 연도 0101부터만 */
-  const startForFetch = p.ymd.slice(0,4) + "0101";
+  // ✅ 핵심: 2025-04부터 표 계산하려면 2025-01~03이 필요 → 2025년 이상이면 20250102부터 고정
+  let startForFetch;
+  if (p.y >= 2025) startForFetch = "20250102";
+  else startForFetch = `${p.y}0102`;
+
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
 
   setLoading(true);
@@ -815,4 +812,6 @@ $(function(){
 </script>
 </body>
 </html>
+
+
 
