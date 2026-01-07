@@ -727,6 +727,7 @@ function search(){
   }
 
   $.ajax({
+    const key = encodeURIComponent("미국달러|멕시코|영국파운드|유로|아랍에미리트디르함|일본엔(100엔)|인도루피");
     url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
     dataType: "jsonp",
     timeout: 60000, // ✅ 60초
@@ -824,3 +825,4 @@ $(function(){
 </script>
 </body>
 </html>
+
