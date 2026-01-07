@@ -83,13 +83,13 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
   margin-bottom:10px;
 }
 
-/* 좌/우 */
+/* ✅ 좌/우 레이아웃 */
 .two-col{
   display:grid;
-  grid-template-columns: 0.82fr 1.18fr;
+  grid-template-columns: 0.82fr 1.18fr; /* 왼쪽 줄임 / 오른쪽 늘림 */
   gap:12px;
   align-items:stretch;
-  min-height: calc(100vh - 140px);
+  height: calc(100vh - 140px); /* 한 화면 기준 */
 }
 
 /* ===== 왼쪽(슈프리마) ===== */
@@ -111,7 +111,8 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
 .left-body{
   display:flex;
   flex-direction:column;
-  height: calc(100% - 26px);
+  height: 100%;
+  min-height:0;
 }
 .table-zone{
   flex:1;
@@ -149,13 +150,14 @@ td{
 }
 .table-footnote .dot{ color:var(--burgundy); font-weight:900; margin-right:6px; }
 
-/* ===== 오른쪽 ===== */
+/* ===== 오른쪽(전체 통화 요약 + 그래프 선택) ===== */
 .right-body{
   display:flex;
   flex-direction:column;
   height:100%;
   min-height:0;
 }
+
 .controls-row{
   display:flex;
   align-items:center;
@@ -177,7 +179,7 @@ td{
   padding:6px 10px;
 }
 
-/* 전체 통화 요약 표 */
+/* ✅ 전체 통화 요약: 스크롤 없이 한 번에 표시 */
 .summary-zone{
   border:1px solid var(--border);
   border-radius:12px;
@@ -186,19 +188,30 @@ td{
   margin-bottom:10px;
 }
 .summary-scroll{
-  max-height: 250px;
-  overflow:auto;
+  height:auto;
+  max-height:none;
+  overflow:visible;
 }
-#allSummaryTable th{ font-size:12px; padding:10px 8px; }
-#allSummaryTable td{ font-size:12px; padding:9px 8px; }
+
+#allSummaryTable{ width:100%; border-collapse:collapse; table-layout:fixed; }
+#allSummaryTable th{
+  font-size:11px;
+  padding:8px 6px;
+}
+#allSummaryTable td{
+  font-size:11px;
+  padding:7px 6px;
+}
+#allSummaryTable th, #allSummaryTable td{
+  white-space:nowrap;
+}
 td.left{text-align:left;}
 td.bold{font-weight:900;}
 .small-muted{ font-size:12px; color:#777; font-weight:800; }
 
-/* 그래프 */
+/* ✅ 그래프: 높이 줄여서 한 페이지에 */
 .chart-card{
-  flex:1;
-  min-height:0;
+  flex:0 0 auto;
   display:flex;
   flex-direction:column;
 }
@@ -216,8 +229,7 @@ td.bold{font-weight:900;}
   color:#666;
 }
 .chart-container{
-  flex:1;
-  min-height:0;
+  height:240px; /* 🔥 더 줄이고 싶으면 220~260 조절 */
   position:relative;
 }
 #rateChart{ width:100%; height:100%; }
@@ -278,7 +290,7 @@ td.bold{font-weight:900;}
 
     <div class="two-col">
 
-      <!-- LEFT -->
+      <!-- ===== LEFT ===== -->
       <div class="card">
         <div class="section-title">※ 슈프리마 적용환율 상세 (USD)</div>
 
@@ -319,7 +331,7 @@ td.bold{font-weight:900;}
         </div>
       </div>
 
-      <!-- RIGHT -->
+      <!-- ===== RIGHT ===== -->
       <div class="card">
         <div class="right-body">
 
@@ -338,7 +350,6 @@ td.bold{font-weight:900;}
                   <tr>
                     <th style="width:150px;">통화</th>
                     <th>조회일 환율</th>
-                    <th>조회일 최초 고시환율</th>
                     <th>당해년도 평균</th>
                     <th>전월 평균</th>
                     <th>직전 3개월 평균(당월 제외)</th>
@@ -409,6 +420,12 @@ function parseDateInput(val){
     const d = parseInt(s.slice(8,10),10);
     return { y, m, d, ymd: s.replace(/-/g,""), iso: s };
   }
+  if(/^\d{8}$/.test(s)){
+    const y = parseInt(s.slice(0,4),10);
+    const m = parseInt(s.slice(4,6),10);
+    const d = parseInt(s.slice(6,8),10);
+    return { y, m, d, ymd: s, iso: `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}` };
+  }
   return null;
 }
 
@@ -449,7 +466,7 @@ function calcAvg(cRowsSorted, s, e){
   return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null;
 }
 
-/* ✅ 캐시 용량 초과 방지 */
+/* ✅ 캐시 용량 초과 방지: 크면 저장하지 않음 */
 function safeSessionSet(key, obj){
   try{
     const s = JSON.stringify(obj);
@@ -484,6 +501,7 @@ function buildSupremaFrom202504(baseYear, baseMonth){
   const usdRows = globalRows
     .filter(r => String(r.ITEM_NAME1 || "").includes("미국달러"))
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
+
   if(!usdRows.length) return [];
 
   const months = listMonthsFrom(2025, 4, baseYear, baseMonth);
@@ -540,7 +558,7 @@ function calculateSuprema(){
   }
 }
 
-/* ===== 최초 고시환율(연초 첫 고시) ===== */
+/* ===== 연초 시작일 보정(1/2 휴일 대비) ===== */
 function getFirstRowInRange(cRowsSorted, s, e){
   return cRowsSorted.find(x => x.TIME >= s && x.TIME <= e) || null;
 }
@@ -550,7 +568,7 @@ function getYearStartAdjusted(cRowsSorted, year, endTime){
   return (first && first.TIME) ? first.TIME : base;
 }
 
-/* ===== 전체 통화 요약 ===== */
+/* ===== 전체 통화 요약 (최초 고시환율 열 제거 버전) ===== */
 function buildAllCurrencySummary(ymd){
   const year = ymd.slice(0,4);
   const yy = parseInt(ymd.slice(0,4),10);
@@ -567,27 +585,23 @@ function buildAllCurrencySummary(ymd){
       .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
     if(!cRows.length){
-      return { label: cur.label, curr:null, first:null, yavg:null, pavg:null, m3avg:null };
+      return { label: cur.label, curr:null, yavg:null, pavg:null, m3avg:null };
     }
 
     const idx = findLastIndexLE(cRows, ymd);
     const curr = idx !== -1 ? pNum(cRows[idx].DATA_VALUE) : null;
     const currTime = idx !== -1 ? cRows[idx].TIME : null;
 
-    let first = null;
     let yavg = null;
-
     if(currTime){
       const yearStartAdj = getYearStartAdjusted(cRows, year, currTime);
-      const firstRow = getFirstRowInRange(cRows, yearStartAdj, yearStartAdj);
-      first = firstRow ? pNum(firstRow.DATA_VALUE) : null;
       yavg = calcAvg(cRows, yearStartAdj, currTime);
     }
 
     const pavg = calcAvg(cRows, prevMonthStart, prevMonthEnd);
     const m3avg = calcAvg(cRows, m3Start, m3End);
 
-    return { label: cur.label, curr, first, yavg, pavg, m3avg };
+    return { label: cur.label, curr, yavg, pavg, m3avg };
   });
 }
 
@@ -596,12 +610,12 @@ function renderAllCurrencySummary(ymd, iso){
   $("#allSummaryTbody").empty();
 
   const list = buildAllCurrencySummary(ymd);
+
   list.forEach(r=>{
     $("#allSummaryTbody").append(`
       <tr>
         <td class="left bold">${r.label}</td>
         <td>${r.curr == null ? "-" : (fNum(r.curr) + " 원")}</td>
-        <td>${r.first == null ? "-" : (fNum(r.first) + " 원")}</td>
         <td>${r.yavg == null ? "-" : (fNum(r.yavg) + " 원")}</td>
         <td>${r.pavg == null ? "-" : (fNum(r.pavg) + " 원")}</td>
         <td>${r.m3avg == null ? "-" : (fNum(r.m3avg) + " 원")}</td>
@@ -610,7 +624,7 @@ function renderAllCurrencySummary(ymd, iso){
   });
 }
 
-/* ===== 차트 ===== */
+/* ===== 차트 (통화 + 기간 선택) ===== */
 function updateChart(ymd, label, monthsBack){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
@@ -625,8 +639,8 @@ function updateChart(ymd, label, monthsBack){
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const ctx = document.getElementById("rateChart").getContext("2d");
-  const dates = cRows.map(r=>r.TIME);
 
+  const dates = cRows.map(r=>r.TIME);
   const monthEnds = {};
   dates.forEach((d,i)=>{ monthEnds[d.slice(0,6)] = i; });
   const showIndices = new Set(Object.values(monthEnds));
@@ -678,15 +692,9 @@ function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
-  // ✅ 슈프리마(2025-04~) 계산 때문에 최소 20250101부터는 가져와야 안전
-  const startForFetch = "20250101";
-
-  // ✅ 7개 통화 필터 키
-  const keys = encodeURIComponent(
-    "미국달러|멕시코|영국파운드|유로|아랍에미리트디르함|일본엔(100엔)|인도루피"
-  );
-
-  const cacheKey = `rate_data_${startForFetch}_${p.ymd}_keys7`;
+  /* ✅ 호출량/속도 개선: 해당 연도 0101부터만 */
+  const startForFetch = p.ymd.slice(0,4) + "0101";
+  const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
 
   setLoading(true);
 
@@ -713,7 +721,7 @@ function search(){
   }
 
   $.ajax({
-    url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&keys=${keys}&callback=?`,
+    url: `${BACKEND}?start=${startForFetch}&end=${p.ymd}&callback=?`,
     dataType: "jsonp",
     timeout: 60000,
     success: function(data){
@@ -807,3 +815,4 @@ $(function(){
 </script>
 </body>
 </html>
+
