@@ -106,9 +106,7 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
   display:grid;
   grid-template-columns: 0.82fr 1.18fr;
   gap:12px;
-  align-items:stretch;
-  height: calc(100vh - 132px);
-  min-height: 620px;
+  align-items:start;
   padding:0 12px; /* ✅ 전체 폭 늘리면서도 화면 끝에 딱 붙는 것 방지 (원하면 0으로) */
 }
 
@@ -172,7 +170,7 @@ td{
 .right-body{
   display:flex;
   flex-direction:column;
-  height:100%;
+  height:auto%;
   min-height:0;
 }
 .controls-row{
@@ -245,7 +243,7 @@ td{
 
 /* 그래프 */
 .chart-card{
-  flex:0 0 auto;
+  flex:none;
   display:flex;
   flex-direction:column;
 }
@@ -893,3 +891,4 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 </body>
 </html>
+
