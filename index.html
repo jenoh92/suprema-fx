@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>슈프리마 환율 통합 조회 시스템</title>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- 외부 라이브러리: defer로 로딩 순서 보장 -->
+<script defer src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
 :root{
@@ -25,6 +26,26 @@ body{
   color:#333;
 }
 
+/* ✅ 에러 표시 바 */
+#errorBar{
+  display:none;
+  position:sticky;
+  top:0;
+  z-index:10000;
+  background:#fff3f3;
+  border-bottom:1px solid #ffcdd2;
+  color:#b71c1c;
+  padding:10px 14px;
+  font-weight:800;
+  font-size:13px;
+}
+#errorBar code{
+  font-weight:900;
+  background:#ffe8e8;
+  padding:2px 6px;
+  border-radius:6px;
+}
+
 /* 헤더 */
 .header{
   display:flex; align-items:center; gap:15px;
@@ -36,10 +57,10 @@ body{
 .header-title .title{ font-size:20px; font-weight:900; color:var(--burgundy); }
 .header .source{ margin-left:auto; font-size:12px; color:#888; font-weight:700; }
 
-/* 컨테이너 */
+/* ✅ 컨테이너: 좌우 여백 거의 없이 꽉 채우기 */
 .container{
-  width:98%;
-  margin: 0 auto;
+  width:100%;
+  margin: 0;
   padding:12px 0 14px;
   display:flex;
   flex-direction:column;
@@ -49,7 +70,7 @@ body{
 /* 상단 컨트롤 */
 .top-nav{
   display:flex; align-items:center; gap:10px;
-  padding:0 6px;
+  padding:0 12px;  /* 너무 바짝 붙는 게 싫으면 여기 숫자만 조절 */
   flex-wrap:wrap;
 }
 input[type="date"], select{
@@ -88,6 +109,7 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
   align-items:stretch;
   height: calc(100vh - 132px);
   min-height: 620px;
+  padding:0 12px; /* ✅ 전체 폭 늘리면서도 화면 끝에 딱 붙는 것 방지 (원하면 0으로) */
 }
 
 /* ===== 왼쪽 ===== */
@@ -122,18 +144,18 @@ button:disabled{ opacity:0.6; cursor:not-allowed; }
   height:100%;
   overflow:auto;
 }
-table{ width:100%; border-collapse:collapse; font-size:13px; }
+table{ width:100%; border-collapse:collapse; font-size:13px; } /* ✅ 왼쪽 표 기준: 13px */
 th{
   position:sticky; top:0;
   background:var(--burgundy-light);
   color:var(--burgundy);
-  padding:10px 8px;
+  padding:10px 8px; /* ✅ 왼쪽 표 기준 */
   border-bottom:2px solid var(--border);
   text-align:center;
   z-index:1;
 }
 td{
-  padding:10px 8px;
+  padding:10px 8px; /* ✅ 왼쪽 표 기준 */
   border-bottom:1px solid var(--border);
   text-align:center;
 }
@@ -175,29 +197,36 @@ td{
 }
 .small-muted{ font-size:12px; color:#777; font-weight:800; }
 
-/* 요약표 */
+/* ✅ 요약표: 가로 100% 꽉 차게 + 글자 크기/패딩 왼쪽과 동일 */
 .summary-zone{
+  width:100%;
   border:1px solid var(--border);
   border-radius:12px;
   overflow:hidden;
   background:#fff;
   margin-bottom:8px;
 }
-.summary-scroll{ overflow:visible; }
+.summary-scroll{
+  overflow:visible;
+}
 
+/* ✅ table-layout: auto로 해서 “배경이 작아 보이는” 느낌 줄이기 */
 #allSummaryTable{
   width:100%;
   border-collapse:collapse;
-  table-layout:fixed;
+  table-layout:auto;
 }
+
+/* ✅ 오른쪽 요약표 글자 크기 = 왼쪽(13px) */
 #allSummaryTable th{
-  font-size:12px;
-  padding:9px 6px;
+  font-size:13px;
+  padding:10px 8px;   /* ✅ 왼쪽과 동일 */
 }
 #allSummaryTable td{
-  font-size:12px;
-  padding:8px 6px;
+  font-size:13px;
+  padding:10px 8px;   /* ✅ 왼쪽과 동일 */
 }
+
 #allSummaryTable th, #allSummaryTable td{
   white-space:nowrap;
   text-align:center;
@@ -208,7 +237,7 @@ td{
 .delta{
   font-weight:900;
   margin-left:6px;
-  font-size:12px;
+  font-size:12px; /* 델타는 작게 유지(원하면 13px로 올려줄게) */
 }
 .delta.up{ color:#d32f2f; }
 .delta.down{ color:#1976d2; }
@@ -271,6 +300,8 @@ td{
 </head>
 
 <body>
+  <div id="errorBar"></div>
+
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true">
     <div class="loading-box">
       <div class="spinner"></div>
@@ -279,7 +310,7 @@ td{
   </div>
 
   <div class="header">
-    <img src="Suprema_logo_basic.jpg" alt="Logo">
+    <img src="Suprema_logo_basic.jpg" alt="Logo" onerror="this.style.display='none'">
     <div class="header-title"><div class="title">환율 통합 조회 시스템</div></div>
     <div class="source">출처: 한국은행 경제통계시스템 (ECOS)</div>
   </div>
@@ -368,7 +399,7 @@ td{
             <div class="chart-head">
               <div class="chart-title">환율 변동 그래프</div>
               <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-                <!-- ✅ 기간 선택 제거: 통화만 남김 -->
+                <!-- ✅ 기간 선택 UI 제거: 통화만 -->
                 <select id="chartCurrency" style="font-size:14px;"></select>
               </div>
             </div>
@@ -384,7 +415,19 @@ td{
     </div>
   </div>
 
-<script>
+<script defer>
+/* ✅ 화면이 "아예 안 뜨는" 상황 대비: 에러를 상단에 표시 */
+(function(){
+  const showErr = (msg) => {
+    const el = document.getElementById("errorBar");
+    if(!el) return;
+    el.style.display = "block";
+    el.innerHTML = `오류 발생: <code>${String(msg).replace(/</g,"&lt;")}</code> (F12 콘솔도 같이 확인)`;
+  };
+  window.addEventListener("error", (e)=> showErr(e.message || e.error || "Unknown error"));
+  window.addEventListener("unhandledrejection", (e)=> showErr(e.reason || "Unhandled Promise rejection"));
+})();
+
 const BACKEND = "https://script.google.com/macros/s/AKfycbzEKPtHbxnyk71AgYSY0qDhk6vff8pakZT4V3FGjioifdWTk2lQYmpvXoiQyqUsSHM/exec";
 
 const CURRENCIES = [
@@ -425,11 +468,9 @@ function parseDateInput(val){
 function setLoading(on){
   if(on){
     $("#loadingOverlay").css("display","flex").attr("aria-hidden","false");
-    // ✅ chartRange 제거
     $("#btnSearch,#btnExcel,#dateInput,#chartCurrency").prop("disabled", true);
   }else{
     $("#loadingOverlay").hide().attr("aria-hidden","true");
-    // ✅ chartRange 제거
     $("#btnSearch,#btnExcel,#dateInput,#chartCurrency").prop("disabled", false);
   }
 }
@@ -472,7 +513,7 @@ function safeSessionSet(key, obj){
   }
 }
 
-/* ===== 슈프리마: 2025-07부터 표시(4/5/6 숨김) ===== */
+/* ===== 슈프리마: 2025-07부터 표시 ===== */
 function listMonthsFrom(startY, startM, endY, endM){
   const out = [];
   let y = startY, m = startM;
@@ -639,16 +680,15 @@ function renderAllCurrencySummary(ymd, iso){
   });
 }
 
-/* ===== 차트: 기간 선택 제거(최근 3개월 고정) + 축 유지, "선"만 정리 ===== */
+/* ===== 차트: 기간 선택 제거(최근 3개월 고정) ===== */
 function updateChart(ymd, label){
   const key = CURRENCIES.find(c=>c.label===label)?.key;
   if(!key) return;
 
   const yy = parseInt(ymd.slice(0,4),10);
   const mm = parseInt(ymd.slice(4,6),10);
-  const mBack = 3; // ✅ 고정: 최근 3개월
+  const mBack = 3;
 
-  // ✅ “12월 조회 시 9월말~10/11/12”처럼 보이게: 시작은 9월 1일
   const start = toYmd(new Date(yy, mm - mBack, 1));
 
   const cRows = globalRows
@@ -656,11 +696,11 @@ function updateChart(ymd, label){
     .sort((a,b)=>a.TIME.localeCompare(b.TIME));
 
   const canvas = document.getElementById("rateChart");
+  if(!canvas) return;
   const ctx = canvas.getContext("2d");
 
   const dates = cRows.map(r=>r.TIME);
 
-  // 월별 마지막 값 인덱스만 tick 표시
   const monthEnds = {};
   dates.forEach((d,i)=>{ monthEnds[d.slice(0,6)] = i; });
   const showIndices = new Set(Object.values(monthEnds));
@@ -692,8 +732,8 @@ function updateChart(ymd, label){
       scales: {
         x: {
           display: true,
-          grid: { display: false },     // 세로 격자선 제거
-          border: { display: true },    // X축 라인 유지
+          grid: { display: false },
+          border: { display: true },
           ticks: {
             autoSkip: false,
             font: { size: 12, weight: "bold" },
@@ -705,8 +745,8 @@ function updateChart(ymd, label){
         },
         y: {
           display: true,
-          grid: { display: false },     // 가로 격자선 제거
-          border: { display: true },    // Y축 라인 유지
+          grid: { display: false },
+          border: { display: true },
           ticks: { font: { size: 12 } }
         }
       }
@@ -717,7 +757,6 @@ function updateChart(ymd, label){
 function processResult(p){
   calculateSuprema();
   renderAllCurrencySummary(p.ymd, p.iso);
-  // ✅ 기간 선택 제거: updateChart는 통화만 받음(3개월 고정)
   updateChart(p.ymd, $("#chartCurrency").val());
 }
 
@@ -726,7 +765,7 @@ function search(){
   const p = parseDateInput($("#dateInput").val());
   if(!p){ alert("조회일을 확인해주세요."); return; }
 
-  const startForFetch = "20250101";  // 평균 계산용 충분히
+  const startForFetch = "20250101";
   const cacheKey = `rate_data_${startForFetch}_${p.ymd}`;
 
   setLoading(true);
@@ -825,7 +864,14 @@ function formatDateLocal(d){
   return `${y}-${m}-${day}`;
 }
 
-$(function(){
+document.addEventListener("DOMContentLoaded", function(){
+  if(!window.jQuery) {
+    const eb = document.getElementById("errorBar");
+    eb.style.display = "block";
+    eb.innerHTML = `오류: <code>jQuery 로딩 실패</code> (네트워크/CSP 확인)`;
+    return;
+  }
+
   $("#dateInput").val(formatDateLocal(new Date()));
 
   CURRENCIES.forEach(c=>$("#chartCurrency").append(`<option value="${c.label}">${c.label}</option>`));
@@ -834,7 +880,6 @@ $(function(){
   $("#btnSearch").on("click", search);
   $("#btnExcel").on("click", downloadExcel);
 
-  // ✅ 기간 선택 제거: 통화만 변경 시 차트 업데이트
   $("#chartCurrency").on("change", () => {
     const p = parseDateInput($("#dateInput").val());
     if(!p) return;
