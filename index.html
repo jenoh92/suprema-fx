@@ -687,25 +687,27 @@ function updateChart(ymd, label, monthsBack){
       maintainAspectRatio:false,
       plugins:{ legend:{ display:false } },
       animation:{ duration:250 },
-      scales:{
-        x:{
-          display:true,                 // ✅ X축 유지
-          grid:{ display:false },       // ✅ x축 방향의 세로 그리드 제거
-          border:{ display:true },     // ✅ x축 기준선(바닥선) 제거
-          ticks:{
-            autoSkip:false,
-            font:{ size:12, weight:"bold" },
-            callback: function(val, index){
-              return showIndices.has(index) ? dates[index].slice(4,6)+"-"+dates[index].slice(6,8) : "";
-            }
-          }
-        },
-        y:{
-          display:true,                 // ✅ Y축 유지
-          grid:{ display:false },       // ✅ 가로선 제거
-          border:{ display:true },      // ✅ Y축 세로선은 보이게 (원하면 false로 바꿔도 됨)
-          ticks:{ font:{ size:12 } }
-        }
+        scales: {
+  x: {
+    display: true,
+    grid: { display: false },     // ✅ 세로 격자선 제거
+    border: { display: true },    // ✅ X축 라인(가로선)은 유지!
+    ticks: {
+      autoSkip: false,
+      font: { size: 12, weight: "bold" },
+      callback: function(val, index){
+        return showIndices.has(index) ? dates[index].slice(4,6)+"-"+dates[index].slice(6,8) : "";
+      }
+    }
+  },
+  y: {
+    display: true,
+    grid: { display: false },     // ✅ 가로 격자선 제거
+    border: { display: true },    // ✅ Y축 라인(세로선)은 유지
+    ticks: { font: { size: 12 } }
+  }
+}
+
       }
     }
   });
@@ -844,6 +846,7 @@ $(function(){
 </script>
 </body>
 </html>
+
 
 
 
