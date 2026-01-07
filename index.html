@@ -578,10 +578,14 @@ function calculateSuprema(){
   const p = parseDateInput($("#dateInput").val());
   if(!p) return;
 
-  const list = buildSupremaFrom202507(p.y, p.m);
-  renderSupremaTable(list);
+  const fullList = buildSupremaFrom202507(p.y, p.m);
 
-  const latest = list[0];
+  // ✅ 최근 6개월만 표시 (최신이 위에 있으므로 앞에서 6개)
+  const displayList = fullList.slice(0, 6);
+
+  renderSupremaTable(displayList);
+
+  const latest = displayList[0];
   if(latest && latest.wonka != null){
     $("#resWonka").text(fNum(latest.wonka) + " 원");
     $("#resPanka").text(fNum(latest.panka) + " 원");
@@ -590,6 +594,7 @@ function calculateSuprema(){
     $("#resPanka").text("-");
   }
 }
+
 
 /* ===== 연초 시작일 보정 ===== */
 function getFirstRowInRange(cRowsSorted, s, e){
@@ -891,6 +896,7 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 </body>
 </html>
+
 
 
 
